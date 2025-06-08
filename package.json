@@ -20,7 +20,12 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "deploy": "npm run build && firebase deploy --only hosting",
+    "deploy:preview": "npm run build && firebase hosting:channel:deploy preview",
+    "firebase:login": "firebase login",
+    "firebase:init": "firebase init",
+    "serve": "firebase serve --only hosting"
   },
   "eslintConfig": {
     "extends": [
@@ -39,5 +44,8 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "devDependencies": {
+    "firebase-tools": "^14.6.0"
   }
 }
