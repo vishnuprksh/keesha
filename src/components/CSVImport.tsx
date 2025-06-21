@@ -1,12 +1,13 @@
 import React, { useState, useRef } from 'react';
 import Papa from 'papaparse';
-import { Expense, EXPENSE_CATEGORIES, ExpenseCategory } from '../types';
+import { Transaction, Account } from '../types';
 
 interface CSVRow {
   id: string;
   title: string;
   amount: string;
-  category: string;
+  fromAccountId: string;
+  toAccountId: string;
   date: string;
   description: string;
   isValid: boolean;
@@ -14,10 +15,11 @@ interface CSVRow {
 }
 
 interface CSVImportProps {
-  onImportExpenses: (expenses: Expense[]) => void;
+  accounts: Account[];
+  onImportTransactions: (transactions: Transaction[]) => void;
 }
 
-const CSVImport: React.FC<CSVImportProps> = ({ onImportExpenses }) => {
+const CSVImport: React.FC<CSVImportProps> = ({ accounts, onImportTransactions }) => {
   const [csvData, setCsvData] = useState<CSVRow[]>([]);
   const [isImporting, setIsImporting] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -40,9 +42,23 @@ const CSVImport: React.FC<CSVImportProps> = ({ onImportExpenses }) => {
       isValid = false;
     }
 
-    // Validate category
-    if (!row.category || !EXPENSE_CATEGORIES.includes(row.category as ExpenseCategory)) {
-      errors.push(`Category must be one of: ${EXPENSE_CATEGORIES.join(', ')}`);
+    // Validate fromAccount
+    const fromAccount = accounts.find(acc => acc.name === row.fromAccount || acc.id === row.fromAccount);
+    if (!fromAccount) {
+      errors.push(`From account "${row.fromAccount}" not found`);
+      isValid = false;
+    }
+
+    // Validate toAccount
+    const toAccount = accounts.find(acc => acc.name === row.toAccount || acc.id === row.toAccount);
+    if (!toAccount) {
+      errors.push(`To account "${row.toAccount}" not found`);
+      isValid = false;
+    }
+
+    // Validate that from and to accounts are different
+    if (fromAccount && toAccount && fromAccount.id === toAccount.id) {
+      errors.push('From and To accounts must be different');
       isValid = false;
     }
 
@@ -57,7 +73,8 @@ const CSVImport: React.FC<CSVImportProps> = ({ onImportExpenses }) => {
       id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
       title: row.title || '',
       amount: row.amount || '',
-      category: row.category || '',
+      fromAccountId: fromAccount?.id || '',
+      toAccountId: toAccount?.id || '',
       date: row.date || '',
       description: row.description || '',
       isValid,
@@ -119,16 +136,17 @@ const CSVImport: React.FC<CSVImportProps> = ({ onImportExpenses }) => {
       return;
     }
 
-    const expenses: Expense[] = validRows.map(row => ({
+    const transactions: Transaction[] = validRows.map(row => ({
       id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
       title: row.title.trim(),
       amount: parseFloat(row.amount),
-      category: row.category as ExpenseCategory,
+      fromAccountId: row.fromAccountId,
+      toAccountId: row.toAccountId,
       date: row.date,
       description: row.description?.trim() || ''
     }));
 
-    onImportExpenses(expenses);
+    onImportTransactions(transactions);
     
     // Reset the component
     setCsvData([]);
@@ -137,15 +155,19 @@ const CSVImport: React.FC<CSVImportProps> = ({ onImportExpenses }) => {
       fileInputRef.current.value = '';
     }
     
-    alert(`Successfully imported ${expenses.length} expenses!`);
+    alert(`Successfully imported ${transactions.length} transactions!`);
   };
 
   const downloadTemplate = () => {
+    const bankAccount = accounts.find(acc => acc.type === 'bank')?.name || 'Main Bank Account';
+    const incomeAccount = accounts.find(acc => acc.type === 'income')?.name || 'Income';
+    const expenseAccount = accounts.find(acc => acc.type === 'expense')?.name || 'Food & Dining';
+    
     const template = [
-      ['title', 'amount', 'category', 'date', 'description'],
-      ['Grocery Shopping', '45.67', 'Food & Dining', '2025-06-01', 'Weekly groceries'],
-      ['Gas Station', '35.00', 'Transportation', '2025-06-02', 'Fuel for car'],
-      ['Movie Tickets', '24.00', 'Entertainment', '2025-06-03', 'Weekend movie']
+      ['title', 'amount', 'fromAccount', 'toAccount', 'date', 'description'],
+      ['Salary Payment', '3500.00', incomeAccount, bankAccount, '2025-06-01', 'Monthly salary'],
+      ['Grocery Shopping', '45.67', bankAccount, expenseAccount, '2025-06-01', 'Weekly groceries'],
+      ['Transfer to Savings', '500.00', bankAccount, 'Savings Account', '2025-06-02', 'Monthly savings transfer']
     ];
     
     const csvContent = template.map(row => row.join(',')).join('\n');
@@ -153,7 +175,7 @@ const CSVImport: React.FC<CSVImportProps> = ({ onImportExpenses }) => {
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'expense_template.csv';
+    a.download = 'transaction_template.csv';
     a.click();
     window.URL.revokeObjectURL(url);
   };
@@ -161,8 +183,8 @@ const CSVImport: React.FC<CSVImportProps> = ({ onImportExpenses }) => {
   return (
     <div className="csv-import">
       <div className="csv-import-header">
-        <h2>📄 Import Expenses from CSV</h2>
-        <p>Upload a CSV file to import multiple expenses at once</p>
+        <h2>📄 Import Transactions from CSV</h2>
+        <p>Upload a CSV file to import multiple transactions at once</p>
       </div>
 
       <div className="csv-upload-section">
@@ -196,7 +218,7 @@ const CSVImport: React.FC<CSVImportProps> = ({ onImportExpenses }) => {
                 className="import-btn"
                 disabled={csvData.filter(row => row.isValid).length === 0}
               >
-                Import {csvData.filter(row => row.isValid).length} Valid Expenses
+                Import {csvData.filter(row => row.isValid).length} Valid Transactions
               </button>
             </div>
           </div>
@@ -207,7 +229,8 @@ const CSVImport: React.FC<CSVImportProps> = ({ onImportExpenses }) => {
                 <tr>
                   <th>Title</th>
                   <th>Amount</th>
-                  <th>Category</th>
+                  <th>From Account</th>
+                  <th>To Account</th>
                   <th>Date</th>
                   <th>Description</th>
                   <th>Status</th>
@@ -236,13 +259,29 @@ const CSVImport: React.FC<CSVImportProps> = ({ onImportExpenses }) => {
                     </td>
                     <td>
                       <select
-                        value={row.category}
-                        onChange={(e) => updateRow(index, 'category', e.target.value)}
-                        className={row.errors.some(e => e.includes('Category')) ? 'error' : ''}
+                        value={row.fromAccountId}
+                        onChange={(e) => updateRow(index, 'fromAccountId', e.target.value)}
+                        className={row.errors.some(e => e.includes('From account')) ? 'error' : ''}
                       >
-                        <option value="">Select Category</option>
-                        {EXPENSE_CATEGORIES.map(cat => (
-                          <option key={cat} value={cat}>{cat}</option>
+                        <option value="">Select From Account</option>
+                        {accounts.map((account) => (
+                          <option key={account.id} value={account.id}>
+                            {account.name} ({account.type})
+                          </option>
+                        ))}
+                      </select>
+                    </td>
+                    <td>
+                      <select
+                        value={row.toAccountId}
+                        onChange={(e) => updateRow(index, 'toAccountId', e.target.value)}
+                        className={row.errors.some(e => e.includes('To account')) ? 'error' : ''}
+                      >
+                        <option value="">Select To Account</option>
+                        {accounts.map((account) => (
+                          <option key={account.id} value={account.id}>
+                            {account.name} ({account.type})
+                          </option>
                         ))}
                       </select>
                     </td>
@@ -303,12 +342,14 @@ const CSVImport: React.FC<CSVImportProps> = ({ onImportExpenses }) => {
       <div className="csv-format-info">
         <h4>CSV Format Requirements:</h4>
         <ul>
-          <li><strong>title:</strong> Name/description of the expense (required)</li>
+          <li><strong>title:</strong> Name/description of the transaction (required)</li>
           <li><strong>amount:</strong> Positive number (required)</li>
-          <li><strong>category:</strong> One of: {EXPENSE_CATEGORIES.join(', ')}</li>
+          <li><strong>fromAccount:</strong> Source account name or ID (required)</li>
+          <li><strong>toAccount:</strong> Destination account name or ID (required)</li>
           <li><strong>date:</strong> Date in YYYY-MM-DD format (required)</li>
           <li><strong>description:</strong> Additional details (optional)</li>
         </ul>
+        <p><strong>Available accounts:</strong> {accounts.map(acc => `${acc.name} (${acc.type})`).join(', ')}</p>
       </div>
     </div>
   );

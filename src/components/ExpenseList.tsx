@@ -46,7 +46,8 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
       amount: parseFloat(editForm.amount),
       category: editForm.category,
       date: editForm.date,
-      description: editForm.description.trim()
+      description: editForm.description.trim(),
+      type: 'expense'
     });
 
     setEditingId(null);

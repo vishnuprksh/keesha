@@ -26,7 +26,8 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense }) => {
       amount: parseFloat(formData.amount),
       category: formData.category,
       date: formData.date,
-      description: formData.description.trim()
+      description: formData.description.trim(),
+      type: 'expense'
     });
 
     // Reset form
