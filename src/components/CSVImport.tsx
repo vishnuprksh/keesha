@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import Papa from 'papaparse';
 import { Transaction, Account } from '../types';
+import { validateCSVTransaction } from '../utils/validation';
 
 interface CSVRow {
   id: string;
@@ -26,59 +27,18 @@ const CSVImport: React.FC<CSVImportProps> = ({ accounts, onImportTransactions })
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const validateRow = (row: any): CSVRow => {
-    const errors: string[] = [];
-    let isValid = true;
-
-    // Validate title
-    if (!row.title || row.title.trim() === '') {
-      errors.push('Title is required');
-      isValid = false;
-    }
-
-    // Validate amount
-    const amount = parseFloat(row.amount);
-    if (isNaN(amount) || amount <= 0) {
-      errors.push('Amount must be a positive number');
-      isValid = false;
-    }
-
-    // Validate fromAccount
-    const fromAccount = accounts.find(acc => acc.name === row.fromAccount || acc.id === row.fromAccount);
-    if (!fromAccount) {
-      errors.push(`From account "${row.fromAccount}" not found`);
-      isValid = false;
-    }
-
-    // Validate toAccount
-    const toAccount = accounts.find(acc => acc.name === row.toAccount || acc.id === row.toAccount);
-    if (!toAccount) {
-      errors.push(`To account "${row.toAccount}" not found`);
-      isValid = false;
-    }
-
-    // Validate that from and to accounts are different
-    if (fromAccount && toAccount && fromAccount.id === toAccount.id) {
-      errors.push('From and To accounts must be different');
-      isValid = false;
-    }
-
-    // Validate date
-    const date = new Date(row.date);
-    if (isNaN(date.getTime())) {
-      errors.push('Date must be in a valid format (YYYY-MM-DD)');
-      isValid = false;
-    }
-
+    const validation = validateCSVTransaction(row, accounts);
+    
     return {
       id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
       title: row.title || '',
       amount: row.amount || '',
-      fromAccountId: fromAccount?.id || '',
-      toAccountId: toAccount?.id || '',
+      fromAccountId: validation.fromAccountId || '',
+      toAccountId: validation.toAccountId || '',
       date: row.date || '',
       description: row.description || '',
-      isValid,
-      errors
+      isValid: validation.isValid,
+      errors: validation.errors
     };
   };
 
@@ -128,7 +88,7 @@ const CSVImport: React.FC<CSVImportProps> = ({ accounts, onImportTransactions })
     setCsvData(prev => prev.filter((_, i) => i !== index));
   };
 
-  const handleImport = () => {
+  const handleImport = async () => {
     const validRows = csvData.filter(row => row.isValid);
     
     if (validRows.length === 0) {
@@ -136,26 +96,37 @@ const CSVImport: React.FC<CSVImportProps> = ({ accounts, onImportTransactions })
       return;
     }
 
-    const transactions: Transaction[] = validRows.map(row => ({
-      id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
-      title: row.title.trim(),
-      amount: parseFloat(row.amount),
-      fromAccountId: row.fromAccountId,
-      toAccountId: row.toAccountId,
-      date: row.date,
-      description: row.description?.trim() || ''
-    }));
+    setIsImporting(true);
 
-    onImportTransactions(transactions);
-    
-    // Reset the component
-    setCsvData([]);
-    setSelectedFile(null);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
+    try {
+      const transactions: Transaction[] = validRows.map(row => ({
+        id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+        title: row.title.trim(),
+        amount: parseFloat(row.amount),
+        fromAccountId: row.fromAccountId,
+        toAccountId: row.toAccountId,
+        date: row.date,
+        description: row.description?.trim() || ''
+      }));
+
+      console.log(`CSV Import: Starting import of ${transactions.length} transactions`);
+      await onImportTransactions(transactions);
+      console.log(`CSV Import: Import completed successfully`);
+      
+      // Reset the component
+      setCsvData([]);
+      setSelectedFile(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+      
+      alert(`Successfully imported ${transactions.length} transactions! The data should appear on other pages within a few seconds due to real-time sync.`);
+    } catch (error) {
+      console.error('Import error:', error);
+      alert('Failed to import transactions. Please try again or check the console for details.');
+    } finally {
+      setIsImporting(false);
     }
-    
-    alert(`Successfully imported ${transactions.length} transactions!`);
   };
 
   const downloadTemplate = () => {
@@ -216,9 +187,12 @@ const CSVImport: React.FC<CSVImportProps> = ({ accounts, onImportTransactions })
               <button 
                 onClick={handleImport}
                 className="import-btn"
-                disabled={csvData.filter(row => row.isValid).length === 0}
+                disabled={csvData.filter(row => row.isValid).length === 0 || isImporting}
               >
-                Import {csvData.filter(row => row.isValid).length} Valid Transactions
+                {isImporting 
+                  ? `Importing ${csvData.filter(row => row.isValid).length} transactions...`
+                  : `Import ${csvData.filter(row => row.isValid).length} Valid Transactions`
+                }
               </button>
             </div>
           </div>

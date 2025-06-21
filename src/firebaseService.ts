@@ -80,14 +80,19 @@ export const transactionService = {
     try {
       const q = query(
         collection(database, TRANSACTIONS_COLLECTION),
-        where('userId', '==', userId),
-        orderBy('date', 'desc')
+        where('userId', '==', userId)
+        // Note: Removed orderBy to avoid requiring composite index while indexes are building
       );
       const querySnapshot = await getDocs(q);
-      return querySnapshot.docs.map(doc => ({
+      const transactions = querySnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       } as Transaction));
+      
+      // Sort in memory by date descending
+      transactions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      
+      return transactions;
     } catch (error) {
       console.error('Error getting transactions:', error);
       throw error;
@@ -99,8 +104,8 @@ export const transactionService = {
     const database = ensureFirebaseConfigured();
     const q = query(
       collection(database, TRANSACTIONS_COLLECTION),
-      where('userId', '==', userId),
-      orderBy('date', 'desc')
+      where('userId', '==', userId)
+      // Note: Removed orderBy to avoid requiring composite index while indexes are building
     );
     
     return onSnapshot(q, (querySnapshot) => {
@@ -108,6 +113,11 @@ export const transactionService = {
         id: doc.id,
         ...doc.data()
       } as Transaction));
+      
+      // Sort in memory by date descending
+      transactions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      
+      console.log(`Real-time update: received ${transactions.length} transactions for user ${userId}`);
       callback(transactions);
     }, (error) => {
       console.error('Error listening to transactions:', error);
@@ -192,14 +202,19 @@ export const accountService = {
     try {
       const q = query(
         collection(database, ACCOUNTS_COLLECTION),
-        where('userId', '==', userId),
-        orderBy('name')
+        where('userId', '==', userId)
+        // Note: Removed orderBy to avoid requiring composite index while indexes are building
       );
       const querySnapshot = await getDocs(q);
-      return querySnapshot.docs.map(doc => ({
+      const accounts = querySnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       } as Account));
+      
+      // Sort in memory by name
+      accounts.sort((a, b) => a.name.localeCompare(b.name));
+      
+      return accounts;
     } catch (error) {
       console.error('Error getting accounts:', error);
       throw error;
@@ -211,8 +226,8 @@ export const accountService = {
     const database = ensureFirebaseConfigured();
     const q = query(
       collection(database, ACCOUNTS_COLLECTION),
-      where('userId', '==', userId),
-      orderBy('name')
+      where('userId', '==', userId)
+      // Note: Removed orderBy to avoid requiring composite index while indexes are building
     );
     
     return onSnapshot(q, (querySnapshot) => {
@@ -220,6 +235,10 @@ export const accountService = {
         id: doc.id,
         ...doc.data()
       } as Account));
+      
+      // Sort in memory by name
+      accounts.sort((a, b) => a.name.localeCompare(b.name));
+      
       callback(accounts);
     }, (error) => {
       console.error('Error listening to accounts:', error);

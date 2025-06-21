@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { AuthUser } from '../authService';
 
 interface UserHeaderProps {
@@ -8,38 +8,31 @@ interface UserHeaderProps {
 
 const UserHeader: React.FC<UserHeaderProps> = ({ user, onSignOut }) => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, right: 0 });
+  const buttonRef = React.useRef<HTMLButtonElement>(null);
+
+  const toggleDropdown = () => {
+    if (!dropdownOpen && buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      setDropdownPosition({
+        top: rect.bottom + 8,
+        right: window.innerWidth - rect.right
+      });
+    }
+    setDropdownOpen(!dropdownOpen);
+  };
 
   return (
-    <div style={{ 
-      display: 'flex', 
-      alignItems: 'center', 
-      gap: '1rem',
-      position: 'relative'
-    }}>
+    <div className="user-header">
       <span style={{ color: '#666', fontSize: '0.9rem' }}>
         Welcome back!
       </span>
       
       <div style={{ position: 'relative' }}>
         <button
-          onClick={() => setDropdownOpen(!dropdownOpen)}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.5rem',
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
-            padding: '0.5rem',
-            borderRadius: '8px',
-            transition: 'background-color 0.2s'
-          }}
-          onMouseOver={(e) => {
-            e.currentTarget.style.backgroundColor = '#f0f0f0';
-          }}
-          onMouseOut={(e) => {
-            e.currentTarget.style.backgroundColor = 'transparent';
-          }}
+          ref={buttonRef}
+          onClick={toggleDropdown}
+          className="user-dropdown-trigger"
         >
           {user.photoURL ? (
             <img
@@ -102,34 +95,19 @@ const UserHeader: React.FC<UserHeaderProps> = ({ user, onSignOut }) => {
           <>
             {/* Backdrop */}
             <div
-              style={{
-                position: 'fixed',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                zIndex: 10
-              }}
+              className="user-dropdown-backdrop"
               onClick={() => setDropdownOpen(false)}
             />
             
             {/* Dropdown */}
-            <div style={{
-              position: 'absolute',
-              top: '100%',
-              right: 0,
-              background: 'white',
-              border: '1px solid #ddd',
-              borderRadius: '8px',
-              boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-              minWidth: '200px',
-              zIndex: 20,
-              marginTop: '0.5rem'
-            }}>
-              <div style={{ 
-                padding: '1rem',
-                borderBottom: '1px solid #eee'
-              }}>
+            <div 
+              className="user-dropdown-menu"
+              style={{
+                top: `${dropdownPosition.top}px`,
+                right: `${dropdownPosition.right}px`
+              }}
+            >
+              <div className="user-dropdown-header">
                 <div style={{ 
                   fontSize: '0.9rem', 
                   fontWeight: '600',
@@ -151,25 +129,7 @@ const UserHeader: React.FC<UserHeaderProps> = ({ user, onSignOut }) => {
                   onSignOut();
                   setDropdownOpen(false);
                 }}
-                style={{
-                  width: '100%',
-                  padding: '0.75rem 1rem',
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  textAlign: 'left',
-                  color: '#dc3545',
-                  fontSize: '0.9rem',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.5rem'
-                }}
-                onMouseOver={(e) => {
-                  e.currentTarget.style.backgroundColor = '#f8f9fa';
-                }}
-                onMouseOut={(e) => {
-                  e.currentTarget.style.backgroundColor = 'transparent';
-                }}
+                className="user-dropdown-item"
               >
                 <svg width="16" height="16" viewBox="0 0 24 24">
                   <path fill="currentColor" d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.59L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/>

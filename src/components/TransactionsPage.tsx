@@ -1,21 +1,15 @@
 import React, { useState, useMemo } from 'react';
-import { Transaction, Account, getTransactionType, getAccountTypeColor } from '../types';
+import { Transaction, Account, getTransactionType } from '../types';
+import { formatAmount, formatDate } from '../utils/formatters';
+import { filterTransactions, sortTransactions, TransactionFilters } from '../services/filterService';
+import { exportTransactionsToCSV, generateCSVFilename } from '../utils/csvExport';
+import EmptyState from './common/EmptyState';
 
 interface TransactionsPageProps {
   transactions: Transaction[];
   accounts: Account[];
   onDeleteTransaction: (id: string) => void;
   onUpdateTransaction: (id: string, transaction: Omit<Transaction, 'id'>) => void;
-}
-
-interface TransactionFilters {
-  search: string;
-  accountId: string;
-  transactionType: '' | 'income' | 'expense' | 'transfer';
-  dateFrom: string;
-  dateTo: string;
-  amountMin: string;
-  amountMax: string;
 }
 
 const TransactionsPage: React.FC<TransactionsPageProps> = ({
@@ -48,82 +42,8 @@ const TransactionsPage: React.FC<TransactionsPageProps> = ({
 
   // Filter and sort transactions
   const filteredTransactions = useMemo(() => {
-    let filtered = transactions.filter(transaction => {
-      // Search filter
-      if (filters.search) {
-        const searchTerm = filters.search.toLowerCase();
-        const matchesTitle = transaction.title.toLowerCase().includes(searchTerm);
-        const matchesDescription = transaction.description?.toLowerCase().includes(searchTerm);
-        const matchesFromAccount = getAccountName(transaction.fromAccountId).toLowerCase().includes(searchTerm);
-        const matchesToAccount = getAccountName(transaction.toAccountId).toLowerCase().includes(searchTerm);
-        
-        if (!matchesTitle && !matchesDescription && !matchesFromAccount && !matchesToAccount) {
-          return false;
-        }
-      }
-
-      // Account filter
-      if (filters.accountId) {
-        if (transaction.fromAccountId !== filters.accountId && transaction.toAccountId !== filters.accountId) {
-          return false;
-        }
-      }
-
-      // Transaction type filter
-      if (filters.transactionType) {
-        const transactionType = getTransactionType(transaction, accounts);
-        if (transactionType !== filters.transactionType) {
-          return false;
-        }
-      }
-
-      // Date range filter
-      if (filters.dateFrom) {
-        if (new Date(transaction.date) < new Date(filters.dateFrom)) {
-          return false;
-        }
-      }
-      if (filters.dateTo) {
-        if (new Date(transaction.date) > new Date(filters.dateTo)) {
-          return false;
-        }
-      }
-
-      // Amount range filter
-      if (filters.amountMin) {
-        if (transaction.amount < parseFloat(filters.amountMin)) {
-          return false;
-        }
-      }
-      if (filters.amountMax) {
-        if (transaction.amount > parseFloat(filters.amountMax)) {
-          return false;
-        }
-      }
-
-      return true;
-    });
-
-    // Sort transactions
-    filtered.sort((a, b) => {
-      let comparison = 0;
-      
-      switch (sortBy) {
-        case 'date':
-          comparison = new Date(a.date).getTime() - new Date(b.date).getTime();
-          break;
-        case 'amount':
-          comparison = a.amount - b.amount;
-          break;
-        case 'title':
-          comparison = a.title.localeCompare(b.title);
-          break;
-      }
-      
-      return sortOrder === 'asc' ? comparison : -comparison;
-    });
-
-    return filtered;
+    const filtered = filterTransactions(transactions, accounts, filters);
+    return sortTransactions(filtered, sortBy, sortOrder);
   }, [transactions, accounts, filters, sortBy, sortOrder]);
 
   const handleFilterChange = (key: keyof TransactionFilters, value: string) => {
@@ -139,21 +59,6 @@ const TransactionsPage: React.FC<TransactionsPageProps> = ({
       dateTo: '',
       amountMin: '',
       amountMax: ''
-    });
-  };
-
-  const formatAmount = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD'
-    }).format(amount);
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
     });
   };
 
@@ -184,8 +89,6 @@ const TransactionsPage: React.FC<TransactionsPageProps> = ({
 
   const getTransactionTypeDisplay = (transaction: Transaction) => {
     const type = getTransactionType(transaction, accounts);
-    const fromAccount = accounts.find(acc => acc.id === transaction.fromAccountId);
-    const toAccount = accounts.find(acc => acc.id === transaction.toAccountId);
     
     switch (type) {
       case 'income':
@@ -197,6 +100,11 @@ const TransactionsPage: React.FC<TransactionsPageProps> = ({
     }
   };
 
+  const handleExportCSV = () => {
+    const filename = generateCSVFilename(filteredTransactions);
+    exportTransactionsToCSV(filteredTransactions, accounts, filename);
+  };
+
   return (
     <div className="transactions-page">
       {/* Compact Header with Filters Toggle */}
@@ -204,6 +112,23 @@ const TransactionsPage: React.FC<TransactionsPageProps> = ({
         <div className="header-content">
           <h2>💰 Transactions ({filteredTransactions.length})</h2>
           <div className="header-controls">
+            <button 
+              onClick={handleExportCSV}
+              className="btn btn-export"
+              title="Export transactions to CSV"
+              style={{ marginRight: '8px' }}
+              disabled={filteredTransactions.length === 0}
+            >
+              📤 Export CSV
+            </button>
+            <button 
+              onClick={() => window.location.reload()}
+              className="btn btn-refresh"
+              title="Refresh data"
+              style={{ marginRight: '8px' }}
+            >
+              🔄 Refresh
+            </button>
             <button 
               onClick={() => setFiltersExpanded(!filtersExpanded)}
               className="btn btn-filter-toggle"
@@ -322,10 +247,11 @@ const TransactionsPage: React.FC<TransactionsPageProps> = ({
       {/* Transactions Table */}
       <div className="card transactions-table-container">
         {filteredTransactions.length === 0 ? (
-          <div className="empty-state">
-            <h3>No transactions found</h3>
-            <p>Try adjusting your filters or add some transactions to get started.</p>
-          </div>
+          <EmptyState
+            icon="📊"
+            title="No transactions found"
+            description="Try adjusting your filters or add some transactions to get started."
+          />
         ) : (
           <div className="transactions-table-wrapper">
             <table className="transactions-table">

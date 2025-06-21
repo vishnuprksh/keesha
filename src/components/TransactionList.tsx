@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
-import { Transaction, Account, getTransactionType, getAccountTypeColor } from '../types';
+import { Transaction, Account, getTransactionType } from '../types';
+import { formatAmount, formatDate } from '../utils/formatters';
+import EmptyState from './common/EmptyState';
 
 interface TransactionListProps {
   transactions: Transaction[];
@@ -97,21 +99,15 @@ const TransactionList: React.FC<TransactionListProps> = ({
     }
   };
 
-  const formatAmount = (amount: number, transaction: Transaction) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD'
-    }).format(amount);
-  };
-
   if (transactions.length === 0) {
     return (
       <div className="card transaction-list">
         <h2>Recent Transactions</h2>
-        <div className="empty-state">
-          <p>💸 No transactions yet</p>
-          <p>Add your first transaction to get started!</p>
-        </div>
+        <EmptyState
+          icon="💸"
+          title="No transactions yet"
+          description="Add your first transaction to get started!"
+        />
       </div>
     );
   }
@@ -250,7 +246,7 @@ const TransactionList: React.FC<TransactionListProps> = ({
                         className="transaction-amount"
                         style={{ color: typeDisplay.color }}
                       >
-                        {formatAmount(transaction.amount, transaction)}
+                        {formatAmount(transaction.amount)}
                       </span>
                     </div>
 
@@ -265,7 +261,7 @@ const TransactionList: React.FC<TransactionListProps> = ({
                             To: {getAccountName(transaction.toAccountId)}
                           </span>
                         </div>
-                        <span className="date">{new Date(transaction.date).toLocaleDateString()}</span>
+                        <span className="date">{formatDate(transaction.date)}</span>
                       </div>
                       {transaction.description && (
                         <p className="description">{transaction.description}</p>

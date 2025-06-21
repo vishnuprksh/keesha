@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import './App.css';
-import { Transaction, Account, DEFAULT_ACCOUNTS } from './types';
+import { Transaction, Account } from './types';
 import TransactionForm from './components/TransactionForm';
 import TransactionList from './components/TransactionList';
 import TransactionSummary from './components/TransactionSummary';
@@ -11,13 +11,15 @@ import StatsPage from './components/StatsPage';
 import FirebaseSetup from './components/FirebaseSetup';
 import LoginPage from './components/LoginPage';
 import UserHeader from './components/UserHeader';
+import SyncStatusIndicator from './components/SyncStatusIndicator';
+import LoadingSpinner from './components/common/LoadingSpinner';
+import ErrorMessage from './components/common/ErrorMessage';
 import { useFirebaseData } from './useFirebaseData';
 import { useAuth } from './useAuth';
-import { migrationService } from './firebaseService';
+import { isAccountUsedInTransactions } from './utils/validation';
 
 function App() {
   const [activeTab, setActiveTab] = useState<'home' | 'transactions' | 'accounts' | 'stats' | 'import'>('home');
-  const [isMigrating, setIsMigrating] = useState(false);
   
   // Authentication
   const { user, loading: authLoading, error: authError, signInWithGoogle, signOut, clearError: clearAuthError } = useAuth();
@@ -36,54 +38,24 @@ function App() {
     addAccount: firebaseAddAccount,
     updateAccount: firebaseUpdateAccount,
     deleteAccount: firebaseDeleteAccount,
-    importAccounts: firebaseImportAccounts,
     clearError: clearDataError
   } = useFirebaseData(user?.uid);
-
-  // Initialize default accounts if none exist for the user
-  useEffect(() => {
-    const initializeDefaultAccounts = async () => {
-      if (!user || dataLoading || accounts.length > 0) return;
-      
-      // Check if we need to migrate from localStorage
-      const savedAccounts = localStorage.getItem('keesha-accounts');
-      const savedTransactions = localStorage.getItem('keesha-transactions');
-      
-      if (savedAccounts || savedTransactions) {
-        // Migrate existing data to this user's account
-        setIsMigrating(true);
-        try {
-          await migrationService.migrateLocalStorageToFirebase(user.uid);
-          // Clear localStorage after successful migration
-          localStorage.removeItem('keesha-accounts');
-          localStorage.removeItem('keesha-transactions');
-          localStorage.removeItem('keesha-expenses'); // Remove old expense data too
-          console.log('Migration completed successfully');
-        } catch (error) {
-          console.error('Migration failed:', error);
-          // Fallback to creating default accounts
-          await firebaseImportAccounts(DEFAULT_ACCOUNTS);
-        } finally {
-          setIsMigrating(false);
-        }
-      } else {
-        // Create default accounts for new user
-        await firebaseImportAccounts(DEFAULT_ACCOUNTS);
-      }
-    };
-
-    initializeDefaultAccounts();
-  }, [user, dataLoading, accounts.length, firebaseImportAccounts]);
 
   // Transaction operations with account balance updates
   const addTransaction = async (transaction: Omit<Transaction, 'id'>) => {
     try {
-      await firebaseAddTransaction(transaction);
-      
-      // Update account balances
+      // Get fresh account data to avoid stale balance issues
       const fromAccount = accounts.find(acc => acc.id === transaction.fromAccountId);
       const toAccount = accounts.find(acc => acc.id === transaction.toAccountId);
       
+      if (!fromAccount || !toAccount) {
+        throw new Error('From or To account not found');
+      }
+      
+      // Add transaction first
+      await firebaseAddTransaction(transaction);
+      
+      // Update account balances with optimistic updates
       if (fromAccount) {
         await firebaseUpdateAccount(fromAccount.id, {
           ...fromAccount,
@@ -99,6 +71,7 @@ function App() {
       }
     } catch (error) {
       console.error('Error adding transaction:', error);
+      throw error; // Re-throw to allow UI to handle the error
     }
   };
 
@@ -106,10 +79,14 @@ function App() {
     try {
       const transaction = transactions.find(t => t.id === id);
       if (transaction) {
-        // Reverse the account balance changes
+        // Get fresh account data to avoid stale balance issues
         const fromAccount = accounts.find(acc => acc.id === transaction.fromAccountId);
         const toAccount = accounts.find(acc => acc.id === transaction.toAccountId);
         
+        // Delete transaction first
+        await firebaseDeleteTransaction(id);
+        
+        // Reverse the account balance changes
         if (fromAccount) {
           await firebaseUpdateAccount(fromAccount.id, {
             ...fromAccount,
@@ -123,11 +100,10 @@ function App() {
             balance: toAccount.balance - transaction.amount
           });
         }
-        
-        await firebaseDeleteTransaction(id);
       }
     } catch (error) {
       console.error('Error deleting transaction:', error);
+      throw error; // Re-throw to allow UI to handle the error
     }
   };
 
@@ -135,10 +111,20 @@ function App() {
     try {
       const oldTransaction = transactions.find(t => t.id === id);
       if (oldTransaction) {
-        // Reverse old transaction effects
+        // Get fresh account data to avoid stale balance issues
         const oldFromAccount = accounts.find(acc => acc.id === oldTransaction.fromAccountId);
         const oldToAccount = accounts.find(acc => acc.id === oldTransaction.toAccountId);
+        const newFromAccount = accounts.find(acc => acc.id === updatedTransaction.fromAccountId);
+        const newToAccount = accounts.find(acc => acc.id === updatedTransaction.toAccountId);
         
+        if (!oldFromAccount || !oldToAccount || !newFromAccount || !newToAccount) {
+          throw new Error('One or more accounts not found');
+        }
+        
+        // Update transaction first
+        await firebaseUpdateTransaction(id, updatedTransaction);
+        
+        // Reverse old transaction effects
         if (oldFromAccount) {
           await firebaseUpdateAccount(oldFromAccount.id, {
             ...oldFromAccount,
@@ -153,28 +139,31 @@ function App() {
           });
         }
         
-        // Apply new transaction effects
-        const newFromAccount = accounts.find(acc => acc.id === updatedTransaction.fromAccountId);
-        const newToAccount = accounts.find(acc => acc.id === updatedTransaction.toAccountId);
+        // Apply new transaction effects (get fresh account data if accounts changed)
+        const finalFromAccount = newFromAccount.id === oldFromAccount.id 
+          ? { ...oldFromAccount, balance: oldFromAccount.balance + oldTransaction.amount }
+          : newFromAccount;
+        const finalToAccount = newToAccount.id === oldToAccount.id 
+          ? { ...oldToAccount, balance: oldToAccount.balance - oldTransaction.amount }
+          : newToAccount;
         
-        if (newFromAccount) {
-          await firebaseUpdateAccount(newFromAccount.id, {
-            ...newFromAccount,
-            balance: newFromAccount.balance - updatedTransaction.amount
+        if (finalFromAccount) {
+          await firebaseUpdateAccount(finalFromAccount.id, {
+            ...finalFromAccount,
+            balance: finalFromAccount.balance - updatedTransaction.amount
           });
         }
         
-        if (newToAccount) {
-          await firebaseUpdateAccount(newToAccount.id, {
-            ...newToAccount,
-            balance: newToAccount.balance + updatedTransaction.amount
+        if (finalToAccount) {
+          await firebaseUpdateAccount(finalToAccount.id, {
+            ...finalToAccount,
+            balance: finalToAccount.balance + updatedTransaction.amount
           });
         }
-        
-        await firebaseUpdateTransaction(id, updatedTransaction);
       }
     } catch (error) {
       console.error('Error updating transaction:', error);
+      throw error; // Re-throw to allow UI to handle the error
     }
   };
 
@@ -197,8 +186,7 @@ function App() {
   const deleteAccount = async (id: string) => {
     try {
       // Check if account is used in any transactions
-      const isUsed = transactions.some(t => t.fromAccountId === id || t.toAccountId === id);
-      if (isUsed) {
+      if (isAccountUsedInTransactions(id, transactions)) {
         alert('Cannot delete account that has transactions. Please delete related transactions first.');
         return;
       }
@@ -210,33 +198,53 @@ function App() {
 
   const importTransactions = async (newTransactions: Transaction[]) => {
     try {
-      // Import transactions to Firebase
-      const transactionsWithoutId = newTransactions.map(({ id, ...transaction }) => transaction);
-      await firebaseImportTransactions(transactionsWithoutId);
+      console.log(`App: Starting import of ${newTransactions.length} transactions`);
       
-      // Update account balances
+      // Import transactions to Firebase first - this will trigger the real-time listeners
+      const transactionsWithoutId = newTransactions.map(({ id, ...transaction }) => transaction);
+      console.log('App: Importing transactions to Firebase...');
+      await firebaseImportTransactions(transactionsWithoutId);
+      console.log('App: Transactions imported to Firebase successfully');
+      
+      // Wait a short moment for Firebase to process the batch and trigger listeners
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Update account balances in batches for better performance
+      const accountUpdates: { [accountId: string]: number } = {};
+      
+      // Calculate balance changes for each account
       for (const transaction of newTransactions) {
-        const fromAccount = accounts.find(acc => acc.id === transaction.fromAccountId);
-        const toAccount = accounts.find(acc => acc.id === transaction.toAccountId);
+        // Subtract from source account
+        accountUpdates[transaction.fromAccountId] = (accountUpdates[transaction.fromAccountId] || 0) - transaction.amount;
         
-        if (fromAccount) {
-          await firebaseUpdateAccount(fromAccount.id, {
-            ...fromAccount,
-            balance: fromAccount.balance - transaction.amount
-          });
-        }
-        
-        if (toAccount) {
-          await firebaseUpdateAccount(toAccount.id, {
-            ...toAccount,
-            balance: toAccount.balance + transaction.amount
+        // Add to destination account
+        accountUpdates[transaction.toAccountId] = (accountUpdates[transaction.toAccountId] || 0) + transaction.amount;
+      }
+      
+      console.log('App: Updating account balances...', accountUpdates);
+      
+      // Apply all balance updates
+      for (const accountId in accountUpdates) {
+        const balanceChange = accountUpdates[accountId];
+        const account = accounts.find(acc => acc.id === accountId);
+        if (account) {
+          await firebaseUpdateAccount(account.id, {
+            ...account,
+            balance: account.balance + balanceChange
           });
         }
       }
       
+      console.log('App: Account balances updated successfully');
+      
+      // Force a brief wait to ensure all updates are processed
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      console.log('App: Import process completed, switching to home tab');
       setActiveTab('home');
     } catch (error) {
       console.error('Error importing transactions:', error);
+      throw error; // Re-throw to allow UI to handle the error
     }
   };
 
@@ -268,7 +276,7 @@ function App() {
   }
 
   // Show loading state
-  const loading = authLoading || dataLoading || isMigrating;
+  const loading = authLoading || dataLoading;
   if (loading) {
     return (
       <div className="app">
@@ -279,14 +287,12 @@ function App() {
         <main className="app-main">
           <div className="container">
             <div style={{ textAlign: 'center', padding: '2rem' }}>
-              <h2>
-                {isMigrating ? 'Migrating your data...' : 
-                 authLoading ? 'Signing you in...' : 
-                 'Loading your data...'}
-              </h2>
-              <p>
-                {isMigrating ? 'We\'re moving your existing data to the cloud.' : 
-                 'Please wait while we set up your account.'}
+              <LoadingSpinner 
+                size="lg" 
+                text={authLoading ? 'Signing you in...' : 'Loading your data...'}
+              />
+              <p style={{ marginTop: '1rem' }}>
+                Please wait while we set up your account.
               </p>
             </div>
           </div>
@@ -306,19 +312,13 @@ function App() {
         </header>
         <main className="app-main">
           <div className="container">
-            <div style={{ textAlign: 'center', padding: '2rem' }}>
-              <h2>Error</h2>
-              <p>{error}</p>
-              <button 
-                onClick={() => {
-                  clearAuthError();
-                  clearDataError();
-                }} 
-                style={{ padding: '0.5rem 1rem', marginTop: '1rem' }}
-              >
-                Retry
-              </button>
-            </div>
+            <ErrorMessage
+              message={error}
+              onRetry={() => {
+                clearAuthError();
+                clearDataError();
+              }}
+            />
           </div>
         </main>
       </div>
@@ -421,6 +421,16 @@ function App() {
           )}
         </div>
       </main>
+
+      {/* Sync Status Indicator */}
+      <SyncStatusIndicator 
+        loading={dataLoading} 
+        error={dataError} 
+        onRetry={() => {
+          clearDataError();
+          window.location.reload();
+        }}
+      />
     </div>
   );
 }

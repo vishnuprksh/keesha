@@ -1,5 +1,8 @@
 {
   "projects": {
-    "default": "ai-wallet-427217"
-  }
+    "default": "ai-wallet-427217",
+    "staging": "keesha-10560"
+  },
+  "targets": {},
+  "etags": {}
 }

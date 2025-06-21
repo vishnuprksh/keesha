@@ -1,5 +1,11 @@
 import React, { useState } from 'react';
-import { Transaction, Account, getAccountsByType, getAccountTypeColor } from '../types';
+import { Transaction, Account } from '../types';
+import { validateTransactionForm } from '../utils/validation';
+import { useFormValidation } from '../hooks/useFormValidation';
+import AccountSelect from './forms/AccountSelect';
+import AmountInput from './forms/AmountInput';
+import LoadingSpinner from './common/LoadingSpinner';
+import ErrorMessage from './common/ErrorMessage';
 
 interface TransactionFormProps {
   accounts: Account[];
@@ -7,61 +13,64 @@ interface TransactionFormProps {
 }
 
 const TransactionForm: React.FC<TransactionFormProps> = ({ accounts, onAddTransaction }) => {
-  const [formData, setFormData] = useState({
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  
+  const initialValues = {
     title: '',
     amount: '',
     fromAccountId: '',
     toAccountId: '',
     date: new Date().toISOString().split('T')[0],
     description: ''
+  };
+
+  const {
+    values: formData,
+    isValid,
+    setValue,
+    validateForm,
+    reset,
+    getFieldError
+  } = useFormValidation({
+    initialValues,
+    validate: validateTransactionForm
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSubmitError(null);
     
-    if (!formData.title.trim() || !formData.amount || !formData.fromAccountId || !formData.toAccountId) {
+    if (!validateForm()) {
       return;
     }
 
     if (formData.fromAccountId === formData.toAccountId) {
-      alert('From and To accounts must be different');
+      setSubmitError('From and To accounts must be different');
       return;
     }
 
-    onAddTransaction({
-      title: formData.title.trim(),
-      amount: parseFloat(formData.amount),
-      fromAccountId: formData.fromAccountId,
-      toAccountId: formData.toAccountId,
-      date: formData.date,
-      description: formData.description.trim()
-    });
+    setIsSubmitting(true);
+    try {
+      await onAddTransaction({
+        title: formData.title.trim(),
+        amount: parseFloat(formData.amount),
+        fromAccountId: formData.fromAccountId,
+        toAccountId: formData.toAccountId,
+        date: formData.date,
+        description: formData.description.trim()
+      });
 
-    // Reset form
-    setFormData({
-      title: '',
-      amount: '',
-      fromAccountId: '',
-      toAccountId: '',
-      date: new Date().toISOString().split('T')[0],
-      description: ''
-    });
+      // Reset form only on successful submission
+      reset();
+    } catch (error) {
+      setSubmitError(error instanceof Error ? error.message : 'Failed to add transaction');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
-
-  const getAccountName = (accountId: string) => {
-    const account = accounts.find(acc => acc.id === accountId);
-    return account ? account.name : '';
-  };
-
-  const getTransactionTypeLabel = () => {
+  const getTransactionPreview = () => {
     if (!formData.fromAccountId || !formData.toAccountId) return '';
     
     const fromAccount = accounts.find(acc => acc.id === formData.fromAccountId);
@@ -69,6 +78,7 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ accounts, onAddTransa
     
     if (!fromAccount || !toAccount) return '';
     
+    // Determine transaction type based on account types
     if (fromAccount.type === 'income' && toAccount.type === 'bank') {
       return '📈 Income Transaction';
     } else if (fromAccount.type === 'bank' && toAccount.type === 'expense') {
@@ -79,94 +89,78 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ accounts, onAddTransa
   };
 
   return (
-    <div className="card transaction-form">
+    <div className="card expense-form">
       <h2>Add New Transaction</h2>
-      <form onSubmit={handleSubmit} className="form">
+      
+      {submitError && (
+        <ErrorMessage 
+          message={submitError} 
+          onDismiss={() => setSubmitError(null)} 
+        />
+      )}
+      
+      <form onSubmit={handleSubmit}>
         <div className="form-group">
-          <label htmlFor="title">Description</label>
+          <label htmlFor="title">
+            Description *
+            {getFieldError('title') && (
+              <span style={{ color: '#dc3545', marginLeft: '0.5rem' }}>
+                {getFieldError('title')}
+              </span>
+            )}
+          </label>
           <input
             type="text"
             id="title"
-            name="title"
             value={formData.title}
-            onChange={handleChange}
-            placeholder="Enter transaction description"
+            onChange={(e) => setValue('title', e.target.value)}
+            placeholder="Transaction description"
             required
+            disabled={isSubmitting}
           />
         </div>
 
-        <div className="form-group">
-          <label htmlFor="amount">Amount</label>
-          <input
-            type="number"
-            id="amount"
-            name="amount"
-            value={formData.amount}
-            onChange={handleChange}
-            placeholder="0.00"
-            step="0.01"
-            min="0"
-            required
-          />
-        </div>
+        <AmountInput
+          value={formData.amount}
+          onChange={(value) => setValue('amount', value)}
+          label="Amount"
+          name="amount"
+          required
+          disabled={isSubmitting}
+        />
+
+        <AccountSelect
+          accounts={accounts}
+          value={formData.fromAccountId}
+          onChange={(value) => setValue('fromAccountId', value)}
+          label="From Account"
+          name="fromAccountId"
+          placeholder="Select source account"
+          required
+          disabled={isSubmitting}
+        />
+
+        <AccountSelect
+          accounts={accounts}
+          value={formData.toAccountId}
+          onChange={(value) => setValue('toAccountId', value)}
+          label="To Account"
+          name="toAccountId"
+          placeholder="Select destination account"
+          excludeAccount={formData.fromAccountId}
+          required
+          disabled={isSubmitting}
+        />
 
         <div className="form-group">
-          <label htmlFor="fromAccountId">From Account</label>
-          <select
-            id="fromAccountId"
-            name="fromAccountId"
-            value={formData.fromAccountId}
-            onChange={handleChange}
-            required
-          >
-            <option value="">Select source account</option>
-            {accounts.map(account => (
-              <option key={account.id} value={account.id}>
-                {account.name} ({account.type}) - {new Intl.NumberFormat('en-US', {
-                  style: 'currency',
-                  currency: 'USD'
-                }).format(account.balance)}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div className="form-group">
-          <label htmlFor="toAccountId">To Account</label>
-          <select
-            id="toAccountId"
-            name="toAccountId"
-            value={formData.toAccountId}
-            onChange={handleChange}
-            required
-          >
-            <option value="">Select destination account</option>
-            {accounts.map(account => (
-              <option key={account.id} value={account.id}>
-                {account.name} ({account.type}) - {new Intl.NumberFormat('en-US', {
-                  style: 'currency',
-                  currency: 'USD'
-                }).format(account.balance)}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {getTransactionTypeLabel() && (
-          <div className="transaction-type-preview">
-            <span className="type-label">{getTransactionTypeLabel()}</span>
-          </div>
-        )}
-
-        <div className="form-group">
-          <label htmlFor="date">Date</label>
+          <label htmlFor="date">Date *</label>
           <input
             type="date"
             id="date"
-            name="date"
             value={formData.date}
-            onChange={handleChange}
+            onChange={(e) => setValue('date', e.target.value)}
             required
+            disabled={isSubmitting}
           />
         </div>
 
@@ -174,16 +168,38 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ accounts, onAddTransa
           <label htmlFor="description">Notes (Optional)</label>
           <textarea
             id="description"
-            name="description"
             value={formData.description}
-            onChange={handleChange}
-            placeholder="Add any additional notes..."
+            onChange={(e) => setValue('description', e.target.value)}
+            placeholder="Additional notes..."
             rows={3}
+            disabled={isSubmitting}
           />
         </div>
 
-        <button type="submit" className="btn btn-primary">
-          Add Transaction
+        {getTransactionPreview() && (
+          <div style={{
+            padding: '0.75rem',
+            background: '#f8f9fa',
+            border: '1px solid #dee2e6',
+            borderRadius: '8px',
+            marginBottom: '1rem',
+            fontSize: '0.9rem',
+            fontWeight: '500'
+          }}>
+            {getTransactionPreview()}
+          </div>
+        )}
+
+        <button 
+          type="submit" 
+          className="btn"
+          disabled={isSubmitting || !isValid}
+        >
+          {isSubmitting ? (
+            <LoadingSpinner size="sm" text="Adding..." />
+          ) : (
+            'Add Transaction'
+          )}
         </button>
       </form>
     </div>

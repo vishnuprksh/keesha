@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Account, AccountType, getAccountTypeColor } from '../types';
+import { formatAmount } from '../utils/formatters';
 
 interface AccountManagerProps {
   accounts: Account[];
@@ -66,10 +67,7 @@ const AccountManager: React.FC<AccountManagerProps> = ({
   };
 
   const formatBalance = (balance: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD'
-    }).format(balance);
+    return formatAmount(balance);
   };
 
   const getAccountTypeIcon = (type: AccountType) => {

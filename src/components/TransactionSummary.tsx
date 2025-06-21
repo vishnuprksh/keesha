@@ -1,5 +1,7 @@
 import React from 'react';
 import { Transaction, Account, getTransactionType } from '../types';
+import { calculateTransactionTotals, calculateMonthlyTotals } from '../services/transactionService';
+import { formatAmount, formatMonthName } from '../utils/formatters';
 
 interface TransactionSummaryProps {
   transactions: Transaction[];
@@ -7,71 +9,10 @@ interface TransactionSummaryProps {
 }
 
 const TransactionSummary: React.FC<TransactionSummaryProps> = ({ transactions, accounts }) => {
-  const calculateTotals = () => {
-    return transactions.reduce(
-      (totals, transaction) => {
-        const transactionType = getTransactionType(transaction, accounts);
-        switch (transactionType) {
-          case 'income':
-            totals.income += transaction.amount;
-            break;
-          case 'expense':
-            totals.expenses += transaction.amount;
-            break;
-          case 'transfer':
-            totals.transfers += transaction.amount;
-            break;
-        }
-        return totals;
-      },
-      { income: 0, expenses: 0, transfers: 0 }
-    );
-  };
-
-  const calculateMonthlyTotals = () => {
-    const currentMonth = new Date().getMonth();
-    const currentYear = new Date().getFullYear();
-    
-    const monthlyTransactions = transactions.filter(transaction => {
-      const transactionDate = new Date(transaction.date);
-      return transactionDate.getMonth() === currentMonth && transactionDate.getFullYear() === currentYear;
-    });
-
-    return monthlyTransactions.reduce(
-      (totals, transaction) => {
-        const transactionType = getTransactionType(transaction, accounts);
-        switch (transactionType) {
-          case 'income':
-            totals.income += transaction.amount;
-            break;
-          case 'expense':
-            totals.expenses += transaction.amount;
-            break;
-          case 'transfer':
-            totals.transfers += transaction.amount;
-            break;
-        }
-        return totals;
-      },
-      { income: 0, expenses: 0, transfers: 0 }
-    );
-  };
-
-  const totals = calculateTotals();
-  const monthlyTotals = calculateMonthlyTotals();
-  const netWorth = totals.income - totals.expenses;
-  const monthlyNet = monthlyTotals.income - monthlyTotals.expenses;
-
-  const formatAmount = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD'
-    }).format(amount);
-  };
-
-  const getMonthName = () => {
-    return new Date().toLocaleDateString('en-US', { month: 'long' });
-  };
+  const totals = calculateTransactionTotals(transactions, accounts);
+  const monthlyTotals = calculateMonthlyTotals(transactions, accounts);
+  const netWorth = totals.net;
+  const monthlyNet = monthlyTotals.net;
 
   const getCountByType = (type: 'income' | 'expense' | 'transfer') => {
     return transactions.filter(t => getTransactionType(t, accounts) === type).length;
@@ -120,7 +61,7 @@ const TransactionSummary: React.FC<TransactionSummaryProps> = ({ transactions, a
       </div>
 
       <div className="monthly-summary">
-        <h3>{getMonthName()} Summary</h3>
+        <h3>{formatMonthName()} Summary</h3>
         <div className="monthly-grid">
           <div className="monthly-item">
             <span className="label">Income:</span>

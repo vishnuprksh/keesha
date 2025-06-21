@@ -1,5 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Transaction, Account, getTransactionType } from '../types';
+import { formatAmount, formatPercentageValue } from '../utils/formatters';
+import { calculateCategoryStats } from '../services/transactionService';
 
 interface StatsPageProps {
   transactions: Transaction[];
@@ -24,9 +26,6 @@ const StatsPage: React.FC<StatsPageProps> = ({ transactions, accounts }) => {
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
   const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth());
   const [viewExpanded, setViewExpanded] = useState<boolean>(false);
-
-  // Get expense accounts (categories)
-  const expenseAccounts = accounts.filter(acc => acc.type === 'expense');
 
   // Calculate monthly statistics
   const monthlyStats = useMemo(() => {
@@ -62,31 +61,8 @@ const StatsPage: React.FC<StatsPageProps> = ({ transactions, accounts }) => {
 
       if (monthExpenses.length === 0) return;
 
-      // Calculate category-wise expenses
-      const categoryMap = new Map<string, { amount: number; count: number }>();
-      let totalExpenses = 0;
-
-      monthExpenses.forEach(transaction => {
-        const toAccount = accounts.find(acc => acc.id === transaction.toAccountId);
-        const categoryName = toAccount?.name || 'Other';
-        
-        const existing = categoryMap.get(categoryName) || { amount: 0, count: 0 };
-        categoryMap.set(categoryName, {
-          amount: existing.amount + transaction.amount,
-          count: existing.count + 1
-        });
-        totalExpenses += transaction.amount;
-      });
-
-      // Convert to CategoryStats array with percentages
-      const categories: CategoryStats[] = Array.from(categoryMap.entries())
-        .map(([category, data]) => ({
-          category,
-          amount: data.amount,
-          count: data.count,
-          percentage: totalExpenses > 0 ? (data.amount / totalExpenses) * 100 : 0
-        }))
-        .sort((a, b) => b.amount - a.amount);
+      const totalExpenses = monthExpenses.reduce((sum, t) => sum + t.amount, 0);
+      const categories = calculateCategoryStats(transactions, accounts, year, month);
 
       stats.push({
         month: new Date(year, month).toLocaleString('default', { month: 'long' }),
@@ -116,13 +92,6 @@ const StatsPage: React.FC<StatsPageProps> = ({ transactions, accounts }) => {
       name: stats.month
     }))
     .sort((a, b) => b.index - a.index);
-
-  const formatAmount = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD'
-    }).format(amount);
-  };
 
   const getMonthName = (monthIndex: number) => {
     return new Date(2000, monthIndex).toLocaleString('default', { month: 'long' });
@@ -201,7 +170,7 @@ const StatsPage: React.FC<StatsPageProps> = ({ transactions, accounts }) => {
                     </span>
                     <div className="category-stats">
                       <span className="amount">{formatAmount(category.amount)}</span>
-                      <span className="percentage">{category.percentage.toFixed(1)}%</span>
+                      <span className="percentage">{formatPercentageValue(category.percentage)}</span>
                     </div>
                   </div>
                   {viewExpanded && (

@@ -20,27 +20,48 @@ export const useFirebaseData = (userId?: string) => {
 
     if (!userId) {
       setLoading(false);
+      setTransactions([]);
+      setAccounts([]);
       return;
     }
 
     let unsubscribeTransactions: (() => void) | undefined;
     let unsubscribeAccounts: (() => void) | undefined;
+    let accountsLoaded = false;
+    let transactionsLoaded = false;
+
+    const checkInitialLoadComplete = () => {
+      if (accountsLoaded && transactionsLoaded) {
+        setLoading(false);
+      }
+    };
 
     const initializeData = async () => {
       try {
         setLoading(true);
         setError(null);
+        accountsLoaded = false;
+        transactionsLoaded = false;
 
         // Set up real-time listeners
         unsubscribeTransactions = transactionService.subscribeToTransactions(userId, (newTransactions) => {
+          console.log(`useFirebaseData: Transaction update received - ${newTransactions.length} transactions`);
           setTransactions(newTransactions);
+          if (!transactionsLoaded) {
+            transactionsLoaded = true;
+            checkInitialLoadComplete();
+          }
         });
 
         unsubscribeAccounts = accountService.subscribeToAccounts(userId, (newAccounts) => {
+          console.log(`useFirebaseData: Account update received - ${newAccounts.length} accounts`);
           setAccounts(newAccounts);
+          if (!accountsLoaded) {
+            accountsLoaded = true;
+            checkInitialLoadComplete();
+          }
         });
 
-        setLoading(false);
       } catch (err) {
         console.error('Error initializing Firebase data:', err);
         setError(err instanceof Error ? err.message : 'Failed to initialize data');
