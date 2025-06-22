@@ -3,6 +3,7 @@ import * as Papa from 'papaparse';
 import { Transaction, Account, CSVRow } from '../types';
 import { validateCSVTransaction } from '../utils/validation';
 import { useCSVImportState } from '../hooks/useCSVImportState';
+import AccountSelect from './forms/AccountSelect';
 
 interface CSVImportProps {
   accounts: Account[];
@@ -250,32 +251,25 @@ const CSVImport: React.FC<CSVImportProps> = ({ accounts, onImportTransactions })
                       />
                     </td>
                     <td>
-                      <select
+                      <AccountSelect
+                        accounts={accounts}
                         value={row.fromAccountId}
-                        onChange={(e) => updateRow(index, 'fromAccountId', e.target.value)}
-                        className={row.errors.some(e => e.includes('From account')) ? 'error' : ''}
-                      >
-                        <option value="">Select From Account</option>
-                        {accounts.map((account) => (
-                          <option key={account.id} value={account.id}>
-                            {account.name} ({account.type})
-                          </option>
-                        ))}
-                      </select>
+                        onChange={(value) => updateRow(index, 'fromAccountId', value)}
+                        placeholder="Select From Account"
+                        name={`fromAccount-${index}`}
+                        error={row.errors.some(e => e.includes('From account'))}
+                      />
                     </td>
                     <td>
-                      <select
+                      <AccountSelect
+                        accounts={accounts}
                         value={row.toAccountId}
-                        onChange={(e) => updateRow(index, 'toAccountId', e.target.value)}
-                        className={row.errors.some(e => e.includes('To account')) ? 'error' : ''}
-                      >
-                        <option value="">Select To Account</option>
-                        {accounts.map((account) => (
-                          <option key={account.id} value={account.id}>
-                            {account.name} ({account.type})
-                          </option>
-                        ))}
-                      </select>
+                        onChange={(value) => updateRow(index, 'toAccountId', value)}
+                        placeholder="Select To Account"
+                        excludeAccount={row.fromAccountId}
+                        name={`toAccount-${index}`}
+                        error={row.errors.some(e => e.includes('To account'))}
+                      />
                     </td>
                     <td>
                       <input

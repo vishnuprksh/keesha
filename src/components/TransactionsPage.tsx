@@ -4,6 +4,7 @@ import { formatAmount, formatDate } from '../utils/formatters';
 import { filterTransactions, sortTransactions, TransactionFilters } from '../services/filterService';
 import { exportTransactionsToCSV, generateCSVFilename } from '../utils/csvExport';
 import EmptyState from './common/EmptyState';
+import AccountSelect from './forms/AccountSelect';
 
 interface TransactionsPageProps {
   transactions: Transaction[];
@@ -328,28 +329,27 @@ const TransactionsPage: React.FC<TransactionsPageProps> = ({
                             </span>
                           </td>
                           <td>
-                            <select
-                              value={editForm.fromAccountId}
-                              onChange={(e) => setEditForm(prev => prev ? { ...prev, fromAccountId: e.target.value } : null)}
-                            >
-                              {accounts.map(account => (
-                                <option key={account.id} value={account.id}>
-                                  {account.name}
-                                </option>
-                              ))}
-                            </select>
+                            <div style={{ minWidth: '150px' }}>
+                              <AccountSelect
+                                accounts={accounts}
+                                value={editForm.fromAccountId}
+                                onChange={(value) => setEditForm(prev => prev ? { ...prev, fromAccountId: value } : null)}
+                                placeholder="From Account"
+                                name={`edit-from-${editForm.id}`}
+                              />
+                            </div>
                           </td>
                           <td>
-                            <select
-                              value={editForm.toAccountId}
-                              onChange={(e) => setEditForm(prev => prev ? { ...prev, toAccountId: e.target.value } : null)}
-                            >
-                              {accounts.map(account => (
-                                <option key={account.id} value={account.id}>
-                                  {account.name}
-                                </option>
-                              ))}
-                            </select>
+                            <div style={{ minWidth: '150px' }}>
+                              <AccountSelect
+                                accounts={accounts}
+                                value={editForm.toAccountId}
+                                onChange={(value) => setEditForm(prev => prev ? { ...prev, toAccountId: value } : null)}
+                                placeholder="To Account"
+                                excludeAccount={editForm.fromAccountId}
+                                name={`edit-to-${editForm.id}`}
+                              />
+                            </div>
                           </td>
                           <td>
                             <input

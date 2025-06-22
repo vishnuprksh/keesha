@@ -2483,3 +2483,117 @@ body {
 .checkbox-label span {
   user-select: none;
 }
+
+/* Searchable Account Select Styles */
+.searchable-select {
+  position: relative;
+  width: 100%;
+}
+
+.searchable-select .select-input {
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.searchable-select .select-input:hover {
+  border-color: #667eea;
+}
+
+.searchable-select .select-input:focus-within {
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.searchable-select .select-input:focus {
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.searchable-select .dropdown-menu {
+  animation: dropdownFadeIn 0.15s ease-out;
+}
+
+@keyframes dropdownFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.searchable-select .dropdown-item {
+  transition: background-color 0.15s ease;
+}
+
+.searchable-select .dropdown-item:hover {
+  background-color: #f8f9fa !important;
+}
+
+.searchable-select .dropdown-item:last-child {
+  border-bottom: none;
+  border-radius: 0 0 8px 8px;
+}
+
+.searchable-select .dropdown-menu::-webkit-scrollbar {
+  width: 6px;
+}
+
+.searchable-select .dropdown-menu::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.searchable-select .dropdown-menu::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+.searchable-select .dropdown-menu::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* CSV Import specific styles for AccountSelect */
+.csv-preview-table .searchable-select .select-input {
+  min-height: 40px;
+  padding: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.csv-preview-table .searchable-select .dropdown-menu {
+  max-height: 160px;
+  font-size: 0.9rem;
+}
+
+.csv-preview-table .searchable-select .dropdown-item {
+  padding: 8px 12px;
+}
+
+.csv-preview-table .searchable-select .dropdown-menu input {
+  font-size: 0.85rem;
+  padding: 6px 10px;
+}
+
+/* Transaction table specific styles for AccountSelect */
+.transactions-table .searchable-select .select-input {
+  min-height: 36px;
+  padding: 0.4rem;
+  font-size: 0.85rem;
+  border-radius: 6px;
+}
+
+.transactions-table .searchable-select .dropdown-menu {
+  max-height: 140px;
+  font-size: 0.85rem;
+  border-radius: 0 0 6px 6px;
+}
+
+.transactions-table .searchable-select .dropdown-item {
+  padding: 6px 10px;
+}
+
+.transactions-table .searchable-select .dropdown-menu input {
+  font-size: 0.8rem;
+  padding: 4px 8px;
+}

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Transaction, Account, getTransactionType } from '../types';
 import { formatAmount, formatDate } from '../utils/formatters';
 import EmptyState from './common/EmptyState';
+import AccountSelect from './forms/AccountSelect';
 
 interface TransactionListProps {
   transactions: Transaction[];
@@ -159,34 +160,25 @@ const TransactionList: React.FC<TransactionListProps> = ({
 
                     <div className="field-group">
                       <label>From Account</label>
-                      <select
-                        name="fromAccountId"
+                      <AccountSelect
+                        accounts={accounts}
                         value={editForm.fromAccountId}
-                        onChange={handleEditChange}
-                      >
-                        <option value="">Select source account</option>
-                        {accounts.map(account => (
-                          <option key={account.id} value={account.id}>
-                            {account.name} ({account.type})
-                          </option>
-                        ))}
-                      </select>
+                        onChange={(value) => setEditForm(prev => prev ? { ...prev, fromAccountId: value } : null)}
+                        placeholder="Select source account"
+                        name="fromAccountId"
+                      />
                     </div>
 
                     <div className="field-group">
                       <label>To Account</label>
-                      <select
-                        name="toAccountId"
+                      <AccountSelect
+                        accounts={accounts}
                         value={editForm.toAccountId}
-                        onChange={handleEditChange}
-                      >
-                        <option value="">Select destination account</option>
-                        {accounts.map(account => (
-                          <option key={account.id} value={account.id}>
-                            {account.name} ({account.type})
-                          </option>
-                        ))}
-                      </select>
+                        onChange={(value) => setEditForm(prev => prev ? { ...prev, toAccountId: value } : null)}
+                        placeholder="Select destination account"
+                        excludeAccount={editForm.fromAccountId}
+                        name="toAccountId"
+                      />
                     </div>
 
                     <div className="field-group">
