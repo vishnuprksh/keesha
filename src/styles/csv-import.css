@@ -237,6 +237,69 @@
   color: #667eea;
 }
 
+/* Selection controls styles */
+.selection-controls {
+  display: flex;
+  gap: 0.5rem;
+  margin-right: 1rem;
+}
+
+.selection-btn {
+  padding: 0.5rem 1rem;
+  border: 2px solid #e1e8ed;
+  border-radius: 6px;
+  background: white;
+  color: #333;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.selection-btn:hover:not(:disabled) {
+  background: #f8f9fa;
+  border-color: #007bff;
+}
+
+.selection-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.select-header {
+  width: 40px;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.select-header input[type="checkbox"] {
+  transform: scale(1.2);
+  cursor: pointer;
+}
+
+.select-column {
+  width: 40px;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.select-column input[type="checkbox"] {
+  transform: scale(1.1);
+  cursor: pointer;
+}
+
+.select-column input[type="checkbox"]:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Update import summary to accommodate selection info */
+.import-summary p {
+  font-size: 0.95rem;
+  margin: 0;
+  line-height: 1.4;
+}
+
 @media (max-width: 768px) {
   .data-header {
     flex-direction: column;

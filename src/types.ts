@@ -31,6 +31,7 @@ export interface CSVRow {
   isImportant: string;
   isValid: boolean;
   errors: string[];
+  selected: boolean;
 }
 
 // Keep Expense interface for backward compatibility during migration

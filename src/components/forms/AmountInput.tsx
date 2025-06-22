@@ -63,7 +63,7 @@ const AmountInput: React.FC<AmountInputProps> = ({
           zIndex: 1,
           pointerEvents: 'none'
         }}>
-          $
+          ₹
         </span>
         <input
           type="text"

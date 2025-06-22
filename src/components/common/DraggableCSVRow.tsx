@@ -1,6 +1,6 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { CSVRow, Account } from '../../types';
-import { calculateRunningBalances, getAffectedAccountBalances } from '../../utils/balanceCalculator';
+import { getAffectedAccountBalances } from '../../utils/balanceCalculator';
 import { formatAmount } from '../../utils/formatters';
 import AccountSelect from '../forms/AccountSelect';
 
@@ -13,6 +13,7 @@ interface DraggableCSVRowProps {
   onRemoveRow: (index: number) => void;
   onReorderRows: (fromIndex: number, toIndex: number) => void;
   onInsertRow: (index: number) => void;
+  onToggleSelection: (index: number) => void;
   draggedIndex: number | null;
   onDragStart: (index: number) => void;
   onDragEnd: () => void;
@@ -28,6 +29,7 @@ const DraggableCSVRow: React.FC<DraggableCSVRowProps> = ({
   onRemoveRow,
   onReorderRows,
   onInsertRow,
+  onToggleSelection,
   draggedIndex,
   onDragStart,
   onDragEnd,
@@ -97,7 +99,7 @@ const DraggableCSVRow: React.FC<DraggableCSVRowProps> = ({
     <>
       {isDragOver && insertPosition === 'top' && (
         <tr className="drag-insert-indicator">
-          <td colSpan={9}>
+          <td colSpan={10}>
             <div className="insert-line">
               <span className="insert-text">Drop here to insert</span>
             </div>
@@ -117,6 +119,16 @@ const DraggableCSVRow: React.FC<DraggableCSVRowProps> = ({
       >
         <td className="drag-handle">
           <span className="drag-icon" title="Drag to reorder">⋮⋮</span>
+        </td>
+        
+        <td className="select-column">
+          <input
+            type="checkbox"
+            checked={row.selected}
+            onChange={() => onToggleSelection(index)}
+            disabled={!row.isValid}
+            title={row.isValid ? "Select for import" : "Cannot select invalid row"}
+          />
         </td>
         
         <td>
@@ -233,7 +245,7 @@ const DraggableCSVRow: React.FC<DraggableCSVRowProps> = ({
       
       {isDragOver && insertPosition === 'bottom' && (
         <tr className="drag-insert-indicator">
-          <td colSpan={9}>
+          <td colSpan={10}>
             <div className="insert-line">
               <span className="insert-text">Drop here to insert</span>
             </div>

@@ -4,7 +4,6 @@ import { Transaction, Account, CSVRow } from '../types';
 import { validateCSVTransaction } from '../utils/validation';
 import { useCSVImportState } from '../hooks/useCSVImportState';
 import { calculateRunningBalances } from '../utils/balanceCalculator';
-import AccountSelect from './forms/AccountSelect';
 import DraggableCSVRow from './common/DraggableCSVRow';
 
 interface CSVImportProps {
@@ -37,7 +36,8 @@ const CSVImport: React.FC<CSVImportProps> = ({ accounts, onImportTransactions })
       description: row.description || '',
       isImportant: row.isImportant || 'false',
       isValid: validation.isValid,
-      errors: validation.errors
+      errors: validation.errors,
+      selected: validation.isValid // Auto-select valid rows by default
     };
   };
 
@@ -88,6 +88,28 @@ const CSVImport: React.FC<CSVImportProps> = ({ accounts, onImportTransactions })
     });
   };
 
+  const toggleRowSelection = (index: number) => {
+    setCsvData(prev => {
+      const updated = [...prev];
+      updated[index] = { ...updated[index], selected: !updated[index].selected };
+      return updated;
+    });
+  };
+
+  const selectAllValid = () => {
+    setCsvData(prev => prev.map(row => ({
+      ...row,
+      selected: row.isValid
+    })));
+  };
+
+  const deselectAll = () => {
+    setCsvData(prev => prev.map(row => ({
+      ...row,
+      selected: false
+    })));
+  };
+
   const removeRow = (index: number) => {
     setCsvData(prev => prev.filter((_, i) => i !== index));
   };
@@ -112,7 +134,8 @@ const CSVImport: React.FC<CSVImportProps> = ({ accounts, onImportTransactions })
       description: '',
       isImportant: 'false',
       isValid: false,
-      errors: ['Title is required', 'Amount must be a positive number', 'From account is required', 'To account is required']
+      errors: ['Title is required', 'Amount must be a positive number', 'From account is required', 'To account is required'],
+      selected: false
     };
 
     setCsvData(prev => {
@@ -136,17 +159,17 @@ const CSVImport: React.FC<CSVImportProps> = ({ accounts, onImportTransactions })
   };
 
   const handleImport = async () => {
-    const validRows = csvData.filter(row => row.isValid);
+    const selectedRows = csvData.filter(row => row.selected && row.isValid);
     
-    if (validRows.length === 0) {
-      alert('No valid rows to import. Please fix the errors first.');
+    if (selectedRows.length === 0) {
+      alert('No selected valid rows to import. Please select some valid transactions first.');
       return;
     }
 
     setIsImporting(true);
 
     try {
-      const transactions: Transaction[] = validRows.map(row => ({
+      const transactions: Transaction[] = selectedRows.map(row => ({
         id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
         title: row.title.trim(),
         amount: parseFloat(row.amount),
@@ -157,7 +180,7 @@ const CSVImport: React.FC<CSVImportProps> = ({ accounts, onImportTransactions })
         isImportant: row.isImportant === 'true'
       }));
 
-      console.log(`CSV Import: Starting import of ${transactions.length} transactions`);
+      console.log(`CSV Import: Starting import of ${transactions.length} selected transactions`);
       await onImportTransactions(transactions);
       console.log(`CSV Import: Import completed successfully`);
       
@@ -167,7 +190,7 @@ const CSVImport: React.FC<CSVImportProps> = ({ accounts, onImportTransactions })
         fileInputRef.current.value = '';
       }
       
-      alert(`Successfully imported ${transactions.length} transactions! The data should appear on other pages within a few seconds due to real-time sync.`);
+      alert(`Successfully imported ${transactions.length} selected transactions! The data should appear on other pages within a few seconds due to real-time sync.`);
     } catch (error) {
       console.error('Import error:', error);
       alert('Failed to import transactions. Please try again or check the console for details.');
@@ -254,14 +277,32 @@ const CSVImport: React.FC<CSVImportProps> = ({ accounts, onImportTransactions })
                 </span>
               )}
               <div className="import-actions">
+                <div className="selection-controls">
+                  <button 
+                    onClick={selectAllValid}
+                    className="selection-btn"
+                    type="button"
+                    disabled={csvData.filter(row => row.isValid).length === 0}
+                  >
+                    Select All Valid
+                  </button>
+                  <button 
+                    onClick={deselectAll}
+                    className="selection-btn"
+                    type="button"
+                    disabled={csvData.filter(row => row.selected).length === 0}
+                  >
+                    Deselect All
+                  </button>
+                </div>
                 <button 
                   onClick={handleImport}
                   className="import-btn"
-                  disabled={csvData.filter(row => row.isValid).length === 0 || isImporting}
+                  disabled={csvData.filter(row => row.selected && row.isValid).length === 0 || isImporting}
                 >
                   {isImporting 
-                    ? `Importing ${csvData.filter(row => row.isValid).length} transactions...`
-                    : `Import ${csvData.filter(row => row.isValid).length} Valid Transactions`
+                    ? `Importing ${csvData.filter(row => row.selected && row.isValid).length} transactions...`
+                    : `Import ${csvData.filter(row => row.selected && row.isValid).length} Selected Transactions`
                   }
                 </button>
               </div>
@@ -273,6 +314,21 @@ const CSVImport: React.FC<CSVImportProps> = ({ accounts, onImportTransactions })
               <thead>
                 <tr>
                   <th className="drag-header">⋮⋮</th>
+                  <th className="select-header">
+                    <input
+                      type="checkbox"
+                      checked={csvData.length > 0 && csvData.filter(row => row.isValid).every(row => row.selected)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          selectAllValid();
+                        } else {
+                          deselectAll();
+                        }
+                      }}
+                      disabled={csvData.filter(row => row.isValid).length === 0}
+                      title="Select/Deselect all valid transactions"
+                    />
+                  </th>
                   <th>Title</th>
                   <th>Amount</th>
                   <th>From Account</th>
@@ -302,6 +358,7 @@ const CSVImport: React.FC<CSVImportProps> = ({ accounts, onImportTransactions })
                       onRemoveRow={removeRow}
                       onReorderRows={reorderRows}
                       onInsertRow={insertRow}
+                      onToggleSelection={toggleRowSelection}
                       draggedIndex={draggedIndex}
                       onDragStart={handleDragStart}
                       onDragEnd={handleDragEnd}
@@ -329,7 +386,8 @@ const CSVImport: React.FC<CSVImportProps> = ({ accounts, onImportTransactions })
           <div className="import-summary">
             <p>
               <strong>Summary:</strong> {csvData.filter(row => row.isValid).length} valid rows, {' '}
-              {csvData.filter(row => !row.isValid).length} invalid rows
+              {csvData.filter(row => !row.isValid).length} invalid rows, {' '}
+              {csvData.filter(row => row.selected && row.isValid).length} selected for import
             </p>
           </div>
         </div>

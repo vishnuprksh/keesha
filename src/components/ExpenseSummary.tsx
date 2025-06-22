@@ -19,9 +19,9 @@ const ExpenseSummary: React.FC<ExpenseSummaryProps> = ({ expenses }) => {
   const monthlyTotal = monthlyExpenses.reduce((sum, expense) => sum + expense.amount, 0);
 
   const formatAmount = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat('en-IN', {
       style: 'currency',
-      currency: 'USD'
+      currency: 'INR'
     }).format(amount);
   };
 
