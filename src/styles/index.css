@@ -18,6 +18,9 @@
 /* Cards and summaries */
 @import './cards.css';
 
+/* Account Manager styles */
+@import './accounts.css';
+
 /* CSV Import component */
 @import './csv-import.css';
 

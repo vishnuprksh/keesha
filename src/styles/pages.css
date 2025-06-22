@@ -46,33 +46,3 @@
   margin: 0;
   opacity: 0.9;
 }
-
-/* Account Manager */
-.account-manager {
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-  padding: 2rem;
-  margin: 0 auto 2rem auto;
-  width: 90%;
-  max-width: none;
-}
-
-.account-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 2rem;
-  flex-wrap: wrap;
-  gap: 1rem;
-}
-
-.account-header h2 {
-  color: #333;
-  font-size: 2rem;
-  margin: 0;
-}
-
-.account-form {
-  margin-bottom: 2rem;
-}

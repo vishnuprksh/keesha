@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Account, AccountType } from '../../types';
+import { getAccountTypeIcon } from '../../utils/accountUtils';
 
 interface AccountSelectProps {
   accounts: Account[];
@@ -139,18 +140,6 @@ const AccountSelect: React.FC<AccountSelectProps> = ({
       if (inputRef.current) {
         inputRef.current.focus();
       }
-    }
-  };
-
-  const getAccountTypeIcon = (type: AccountType) => {
-    switch (type) {
-      case 'bank': return '🏦';
-      case 'income': return '📈';
-      case 'expense': return '📉';
-      case 'asset': return '💎';
-      case 'liability': return '💳';
-      case 'transaction': return '🔄';
-      default: return '💰';
     }
   };
 

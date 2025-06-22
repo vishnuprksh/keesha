@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Account, AccountType, getAccountTypeColor } from '../types';
 import { formatAmount } from '../utils/formatters';
+import { getAccountTypeIcon, getAccountTypeDisplay } from '../utils/accountUtils';
 import ConfirmDialog from './common/ConfirmDialog';
 import { useConfirmDialog } from '../hooks/useConfirmDialog';
 
@@ -88,18 +89,6 @@ const AccountManager: React.FC<AccountManagerProps> = ({
     return formatAmount(balance);
   };
 
-  const getAccountTypeIcon = (type: AccountType) => {
-    switch (type) {
-      case 'bank': return '🏦';
-      case 'income': return '📈';
-      case 'expense': return '📉';
-      case 'asset': return '💎';
-      case 'liability': return '💳';
-      case 'transaction': return '🔄';
-      default: return '💰';
-    }
-  };
-
   const groupedAccounts = accounts.reduce((groups, account) => {
     if (!groups[account.type]) {
       groups[account.type] = [];
@@ -112,45 +101,48 @@ const AccountManager: React.FC<AccountManagerProps> = ({
     <div className="account-manager">
       <div className="account-header">
         <h2>🏦 Account Management</h2>
+        <p>Manage your financial accounts with ease</p>
         <button
           onClick={() => setShowAddForm(true)}
           className="btn btn-primary"
           disabled={showAddForm || !!editingId}
         >
-          + Add Account
+          + Add New Account
         </button>
       </div>
 
       {(showAddForm || editingId) && (
         <div className="card account-form">
-          <h3>{editingId ? 'Edit Account' : 'Add New Account'}</h3>
+          <h3>
+            {editingId ? '✏️ Edit Account' : '➕ Add New Account'}
+          </h3>
           <form onSubmit={handleSubmit}>
             <div className="form-row">
               <div className="form-group">
-                <label htmlFor="name">Account Name</label>
+                <label htmlFor="name">Account Name *</label>
                 <input
                   type="text"
                   id="name"
                   value={formData.name}
                   onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                  placeholder="Enter account name"
+                  placeholder="Enter account name (e.g., Checking Account)"
                   required
                 />
               </div>
               
               <div className="form-group">
-                <label htmlFor="type">Account Type</label>
+                <label htmlFor="type">Account Type *</label>
                 <select
                   id="type"
                   value={formData.type}
                   onChange={(e) => setFormData(prev => ({ ...prev, type: e.target.value as AccountType }))}
                 >
-                  <option value="bank">Bank Account</option>
-                  <option value="income">Income Account</option>
-                  <option value="expense">Expense Account</option>
-                  <option value="asset">Asset Account</option>
-                  <option value="liability">Liability Account</option>
-                  <option value="transaction">Transaction Account</option>
+                  <option value="bank">{getAccountTypeDisplay('bank')}</option>
+                  <option value="income">{getAccountTypeDisplay('income')}</option>
+                  <option value="expense">{getAccountTypeDisplay('expense')}</option>
+                  <option value="asset">{getAccountTypeDisplay('asset')}</option>
+                  <option value="liability">{getAccountTypeDisplay('liability')}</option>
+                  <option value="transaction">{getAccountTypeDisplay('transaction')}</option>
                 </select>
               </div>
             </div>
@@ -175,17 +167,17 @@ const AccountManager: React.FC<AccountManagerProps> = ({
                   id="description"
                   value={formData.description}
                   onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                  placeholder="Account description"
+                  placeholder="Brief description of this account"
                 />
               </div>
             </div>
 
             <div className="form-actions">
               <button type="submit" className="btn btn-primary">
-                {editingId ? 'Update Account' : 'Create Account'}
+                {editingId ? '💾 Update Account' : '✨ Create Account'}
               </button>
               <button type="button" onClick={handleCancel} className="btn btn-secondary">
-                Cancel
+                ❌ Cancel
               </button>
             </div>
           </form>
@@ -193,14 +185,39 @@ const AccountManager: React.FC<AccountManagerProps> = ({
       )}
 
       <div className="account-groups">
-        {Object.entries(groupedAccounts).map(([type, accountList]) => (
-          <div key={type} className="account-group">
-            <h3 className="group-title">
-              {getAccountTypeIcon(type as AccountType)} {type.charAt(0).toUpperCase() + type.slice(1)} Accounts
-            </h3>
-            <div className="account-list">
+        {accounts.length === 0 ? (
+          <div className="account-empty">
+            <h3>🏦 No Accounts Yet</h3>
+            <p>Start by adding your first account to begin tracking your finances!</p>
+            <button
+              onClick={() => setShowAddForm(true)}
+              className="btn btn-primary"
+              disabled={showAddForm || !!editingId}
+            >
+              + Add Your First Account
+            </button>
+          </div>
+        ) : (
+          Object.entries(groupedAccounts).map(([type, accountList]) => (
+            <div key={type} className="account-group">
+              <h3 className="group-title">
+                {getAccountTypeIcon(type as AccountType)} {type.charAt(0).toUpperCase() + type.slice(1)} Accounts
+                <span style={{ 
+                  marginLeft: 'auto', 
+                  fontSize: '0.9rem', 
+                  opacity: 0.7,
+                  fontWeight: 'normal'
+                }}>
+                  ({accountList.length})
+                </span>
+              </h3>
+              <div className="account-list">
               {accountList.map(account => (
-                <div key={account.id} className="account-item">
+                <div 
+                  key={account.id} 
+                  className="account-item"
+                  data-type={account.type}
+                >
                   <div className="account-info">
                     <div className="account-main">
                       <h4 className="account-name">{account.name}</h4>
@@ -220,6 +237,7 @@ const AccountManager: React.FC<AccountManagerProps> = ({
                       onClick={() => handleEdit(account)}
                       className="btn btn-edit"
                       disabled={showAddForm || !!editingId}
+                      title="Edit Account"
                     >
                       ✏️
                     </button>
@@ -227,6 +245,7 @@ const AccountManager: React.FC<AccountManagerProps> = ({
                       onClick={() => handleDeleteAccount(account)}
                       className="btn btn-delete"
                       disabled={showAddForm || !!editingId}
+                      title="Delete Account"
                     >
                       🗑️
                     </button>
@@ -235,54 +254,59 @@ const AccountManager: React.FC<AccountManagerProps> = ({
               ))}
             </div>
           </div>
-        ))}
+        )))}
       </div>
 
-      <div className="account-summary">
-        <h3>Account Summary</h3>
-        <div className="summary-grid">
-          <div className="summary-item">
-            <span className="label">Total Bank Accounts:</span>
-            <span className="value">
-              {formatBalance(
-                accounts
-                  .filter(acc => acc.type === 'bank')
-                  .reduce((sum, acc) => sum + acc.balance, 0)
-              )}
-            </span>
-          </div>
-          <div className="summary-item">
-            <span className="label">Total Assets:</span>
-            <span className="value">
-              {formatBalance(
-                accounts
-                  .filter(acc => acc.type === 'asset')
-                  .reduce((sum, acc) => sum + acc.balance, 0)
-              )}
-            </span>
-          </div>
-          <div className="summary-item">
-            <span className="label">Total Liabilities:</span>
-            <span className="value">
-              {formatBalance(
-                accounts
-                  .filter(acc => acc.type === 'liability')
-                  .reduce((sum, acc) => sum + acc.balance, 0)
-              )}
-            </span>
-          </div>
-          <div className="summary-item">
-            <span className="label">Total Transaction Accounts:</span>
-            <span className="value">
-              {formatBalance(
-                accounts
-                  .filter(acc => acc.type === 'transaction')
-                  .reduce((sum, acc) => sum + acc.balance, 0)
-              )}
-            </span>
+      {accounts.length > 0 && (
+        <div className="account-summary">
+          <h3>💰 Financial Overview</h3>
+          <div className="summary-grid">
+            <div className="summary-item">
+              <span className="label">Bank Accounts</span>
+              <span className="value">
+                {formatBalance(
+                  accounts
+                    .filter(acc => acc.type === 'bank')
+                    .reduce((sum, acc) => sum + acc.balance, 0)
+                )}
+              </span>
+            </div>
+            <div className="summary-item">
+              <span className="label">Assets</span>
+              <span className="value">
+                {formatBalance(
+                  accounts
+                    .filter(acc => acc.type === 'asset')
+                    .reduce((sum, acc) => sum + acc.balance, 0)
+                )}
+              </span>
+            </div>
+            <div className="summary-item">
+              <span className="label">Liabilities</span>
+              <span className="value">
+                {formatBalance(
+                  accounts
+                    .filter(acc => acc.type === 'liability')
+                    .reduce((sum, acc) => sum + acc.balance, 0)
+                )}
+              </span>
+            </div>
+            <div className="summary-item">
+              <span className="label">Net Worth</span>
+              <span className="value">
+                {formatBalance(
+                  accounts
+                    .filter(acc => ['bank', 'asset'].includes(acc.type))
+                    .reduce((sum, acc) => sum + acc.balance, 0) -
+                  accounts
+                    .filter(acc => acc.type === 'liability')
+                    .reduce((sum, acc) => sum + acc.balance, 0)
+                )}
+              </span>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       <ConfirmDialog
         isOpen={isOpen}
