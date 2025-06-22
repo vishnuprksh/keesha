@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { Account, AccountType, getAccountTypeColor } from '../types';
 import { formatAmount } from '../utils/formatters';
+import ConfirmDialog from './common/ConfirmDialog';
+import { useConfirmDialog } from '../hooks/useConfirmDialog';
 
 interface AccountManagerProps {
   accounts: Account[];
@@ -23,6 +25,8 @@ const AccountManager: React.FC<AccountManagerProps> = ({
     balance: '0',
     description: ''
   });
+
+  const { isOpen, openDialog, closeDialog, dialogConfig } = useConfirmDialog();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -64,6 +68,20 @@ const AccountManager: React.FC<AccountManagerProps> = ({
     setEditingId(null);
     setShowAddForm(false);
     setFormData({ name: '', type: 'bank', balance: '0', description: '' });
+  };
+
+  const handleDeleteAccount = (account: Account) => {
+    openDialog({
+      title: 'Delete Account',
+      message: `Are you sure you want to delete "${account.name}"? This action cannot be undone.`,
+      onConfirm: () => {
+        onDeleteAccount(account.id);
+        closeDialog();
+      },
+      confirmLabel: 'Delete',
+      cancelLabel: 'Cancel',
+      type: 'danger'
+    });
   };
 
   const formatBalance = (balance: number) => {
@@ -206,7 +224,7 @@ const AccountManager: React.FC<AccountManagerProps> = ({
                       ✏️
                     </button>
                     <button
-                      onClick={() => onDeleteAccount(account.id)}
+                      onClick={() => handleDeleteAccount(account)}
                       className="btn btn-delete"
                       disabled={showAddForm || !!editingId}
                     >
@@ -265,6 +283,17 @@ const AccountManager: React.FC<AccountManagerProps> = ({
           </div>
         </div>
       </div>
+
+      <ConfirmDialog
+        isOpen={isOpen}
+        title={dialogConfig?.title || ''}
+        message={dialogConfig?.message || ''}
+        confirmLabel={dialogConfig?.confirmLabel || 'Confirm'}
+        cancelLabel={dialogConfig?.cancelLabel || 'Cancel'}
+        onConfirm={dialogConfig?.onConfirm || (() => {})}
+        onCancel={closeDialog}
+        type={dialogConfig?.type || 'danger'}
+      />
     </div>
   );
 };

@@ -3,6 +3,8 @@ import { Transaction, Account, getTransactionType } from '../types';
 import { formatAmount, formatDate } from '../utils/formatters';
 import EmptyState from './common/EmptyState';
 import AccountSelect from './forms/AccountSelect';
+import ConfirmDialog from './common/ConfirmDialog';
+import { useConfirmDialog } from '../hooks/useConfirmDialog';
 
 interface TransactionListProps {
   transactions: Transaction[];
@@ -29,6 +31,8 @@ const TransactionList: React.FC<TransactionListProps> = ({
 }) => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<EditingTransaction | null>(null);
+
+  const { isOpen, openDialog, closeDialog, dialogConfig } = useConfirmDialog();
 
   const handleEdit = (transaction: Transaction) => {
     setEditingId(transaction.id);
@@ -69,6 +73,20 @@ const TransactionList: React.FC<TransactionListProps> = ({
   const handleCancel = () => {
     setEditingId(null);
     setEditForm(null);
+  };
+
+  const handleDeleteTransaction = (transaction: Transaction) => {
+    openDialog({
+      title: 'Delete Transaction',
+      message: `Are you sure you want to delete "${transaction.title}"? This action cannot be undone.`,
+      onConfirm: () => {
+        onDeleteTransaction(transaction.id);
+        closeDialog();
+      },
+      confirmLabel: 'Delete',
+      cancelLabel: 'Cancel',
+      type: 'danger'
+    });
   };
 
   const handleEditChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -222,7 +240,7 @@ const TransactionList: React.FC<TransactionListProps> = ({
                         ✏️
                       </button>
                       <button
-                        onClick={() => onDeleteTransaction(transaction.id)}
+                        onClick={() => handleDeleteTransaction(transaction)}
                         className="btn btn-delete"
                         title="Delete transaction"
                       >
@@ -266,6 +284,17 @@ const TransactionList: React.FC<TransactionListProps> = ({
           );
         })}
       </div>
+      
+      <ConfirmDialog
+        isOpen={isOpen}
+        title={dialogConfig?.title || ''}
+        message={dialogConfig?.message || ''}
+        confirmLabel={dialogConfig?.confirmLabel || 'Confirm'}
+        cancelLabel={dialogConfig?.cancelLabel || 'Cancel'}
+        onConfirm={dialogConfig?.onConfirm || (() => {})}
+        onCancel={closeDialog}
+        type={dialogConfig?.type || 'danger'}
+      />
     </div>
   );
 };

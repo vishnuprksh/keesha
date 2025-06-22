@@ -5,6 +5,8 @@ import { filterTransactions, sortTransactions, TransactionFilters } from '../ser
 import { exportTransactionsToCSV, generateCSVFilename } from '../utils/csvExport';
 import EmptyState from './common/EmptyState';
 import AccountSelect from './forms/AccountSelect';
+import ConfirmDialog from './common/ConfirmDialog';
+import { useConfirmDialog } from '../hooks/useConfirmDialog';
 
 interface TransactionsPageProps {
   transactions: Transaction[];
@@ -37,6 +39,8 @@ const TransactionsPage: React.FC<TransactionsPageProps> = ({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<Transaction | null>(null);
   const [filtersExpanded, setFiltersExpanded] = useState<boolean>(false);
+
+  const { isOpen, openDialog, closeDialog, dialogConfig } = useConfirmDialog();
 
   // Get account name by ID
   const getAccountName = (accountId: string) => {
@@ -94,6 +98,20 @@ const TransactionsPage: React.FC<TransactionsPageProps> = ({
   const handleCancelEdit = () => {
     setEditingId(null);
     setEditForm(null);
+  };
+
+  const handleDeleteTransaction = (transaction: Transaction) => {
+    openDialog({
+      title: 'Delete Transaction',
+      message: `Are you sure you want to delete "${transaction.title}"? This action cannot be undone.`,
+      onConfirm: () => {
+        onDeleteTransaction(transaction.id);
+        closeDialog();
+      },
+      confirmLabel: 'Delete',
+      cancelLabel: 'Cancel',
+      type: 'danger'
+    });
   };
 
   const getTransactionTypeDisplay = (transaction: Transaction) => {
@@ -415,7 +433,7 @@ const TransactionsPage: React.FC<TransactionsPageProps> = ({
                                 ✏️
                               </button>
                               <button
-                                onClick={() => onDeleteTransaction(transaction.id)}
+                                onClick={() => handleDeleteTransaction(transaction)}
                                 className="btn btn-delete"
                                 disabled={!!editingId}
                               >
@@ -433,6 +451,17 @@ const TransactionsPage: React.FC<TransactionsPageProps> = ({
           </div>
         )}
       </div>
+      
+      <ConfirmDialog
+        isOpen={isOpen}
+        title={dialogConfig?.title || ''}
+        message={dialogConfig?.message || ''}
+        confirmLabel={dialogConfig?.confirmLabel || 'Confirm'}
+        cancelLabel={dialogConfig?.cancelLabel || 'Cancel'}
+        onConfirm={dialogConfig?.onConfirm || (() => {})}
+        onCancel={closeDialog}
+        type={dialogConfig?.type || 'danger'}
+      />
     </div>
   );
 };

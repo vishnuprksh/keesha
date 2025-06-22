@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { Expense, EXPENSE_CATEGORIES } from '../types';
+import ConfirmDialog from './common/ConfirmDialog';
+import { useConfirmDialog } from '../hooks/useConfirmDialog';
 
 interface ExpenseListProps {
   expenses: Expense[];
@@ -23,6 +25,8 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
 }) => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<EditingExpense | null>(null);
+
+  const { isOpen, openDialog, closeDialog, dialogConfig } = useConfirmDialog();
 
   const handleEdit = (expense: Expense) => {
     setEditingId(expense.id);
@@ -57,6 +61,20 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
   const handleCancel = () => {
     setEditingId(null);
     setEditForm(null);
+  };
+
+  const handleDeleteExpense = (expense: Expense) => {
+    openDialog({
+      title: 'Delete Expense',
+      message: `Are you sure you want to delete "${expense.title}"? This action cannot be undone.`,
+      onConfirm: () => {
+        onDeleteExpense(expense.id);
+        closeDialog();
+      },
+      confirmLabel: 'Delete',
+      cancelLabel: 'Cancel',
+      type: 'danger'
+    });
   };
 
   const handleEditChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -192,7 +210,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                   </button>
                   <button 
                     className="btn btn-danger"
-                    onClick={() => onDeleteExpense(expense.id)}
+                    onClick={() => handleDeleteExpense(expense)}
                   >
                     Delete
                   </button>
@@ -202,6 +220,17 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
           )}
         </div>
       ))}
+      
+      <ConfirmDialog
+        isOpen={isOpen}
+        title={dialogConfig?.title || ''}
+        message={dialogConfig?.message || ''}
+        confirmLabel={dialogConfig?.confirmLabel || 'Confirm'}
+        cancelLabel={dialogConfig?.cancelLabel || 'Cancel'}
+        onConfirm={dialogConfig?.onConfirm || (() => {})}
+        onCancel={closeDialog}
+        type={dialogConfig?.type || 'danger'}
+      />
     </div>
   );
 };
