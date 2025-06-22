@@ -1,0 +1,134 @@
+/* Transaction summary styles */
+.transaction-summary .summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.transaction-summary .summary-item {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-radius: 12px;
+  padding: 1.5rem;
+  text-align: center;
+  border: 1px solid #dee2e6;
+  transition: transform 0.3s ease;
+}
+
+.transaction-summary .summary-item:hover {
+  transform: translateY(-2px);
+}
+
+.transaction-summary .summary-item.income {
+  background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+  border-color: #28a745;
+}
+
+.transaction-summary .summary-item.expense {
+  background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+  border-color: #dc3545;
+}
+
+.transaction-summary .summary-item.transfer {
+  background: linear-gradient(135deg, #cce5ff 0%, #b3d7ff 100%);
+  border-color: #007bff;
+}
+
+.transaction-summary .summary-item.net-worth.positive {
+  background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+  border-color: #28a745;
+}
+
+.transaction-summary .summary-item.net-worth.negative {
+  background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+  border-color: #dc3545;
+}
+
+.summary-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.summary-icon {
+  font-size: 1.5rem;
+}
+
+.summary-header h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  color: #333;
+}
+
+.summary-item .amount {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #333;
+  margin: 0.5rem 0;
+}
+
+.summary-item .count {
+  font-size: 0.9rem;
+  color: #6c757d;
+  font-weight: 500;
+}
+
+.monthly-summary {
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 1.5rem;
+  border: 1px solid #dee2e6;
+}
+
+.monthly-summary h3 {
+  margin: 0 0 1rem 0;
+  color: #333;
+  text-align: center;
+}
+
+.monthly-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1rem;
+}
+
+.monthly-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem;
+  background: white;
+  border-radius: 6px;
+  border: 1px solid #dee2e6;
+}
+
+.monthly-item .label {
+  font-weight: 600;
+  color: #666;
+}
+
+.monthly-item .value {
+  font-weight: 700;
+}
+
+.monthly-item .value.income {
+  color: #28a745;
+}
+
+.monthly-item .value.expense {
+  color: #dc3545;
+}
+
+.monthly-item .value.transfer {
+  color: #007bff;
+}
+
+.monthly-item .value.positive {
+  color: #28a745;
+}
+
+.monthly-item .value.negative {
+  color: #dc3545;
+}

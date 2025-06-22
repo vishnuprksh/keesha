@@ -1,0 +1,126 @@
+/* CSV Table styles */
+.csv-table-container {
+  overflow-x: auto;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  margin: 0 auto 1rem auto;
+  width: 98%;
+  min-width: 98%;
+}
+
+.csv-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 1800px;
+}
+
+.csv-table th {
+  background: #f8f9fa;
+  padding: 1rem;
+  text-align: left;
+  font-weight: 600;
+  color: #333;
+  border-bottom: 2px solid #dee2e6;
+  position: sticky;
+  top: 0;
+  font-size: 16px;
+}
+
+.csv-table td {
+  padding: 1rem;
+  border-bottom: 1px solid #dee2e6;
+  vertical-align: middle;
+  font-size: 15px;
+}
+
+.csv-table tr.valid-row {
+  background: #f8fff8;
+}
+
+.csv-table tr.invalid-row {
+  background: #fff5f5;
+}
+
+.csv-table input,
+.csv-table select {
+  width: 100%;
+  padding: 10px 15px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 15px;
+  min-height: 48px;
+  box-sizing: border-box;
+}
+
+.csv-table input.error,
+.csv-table select.error {
+  border-color: #dc3545;
+  background: #fff5f5;
+}
+
+.csv-table input:focus,
+.csv-table select:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
+}
+
+.status {
+  text-align: center;
+}
+
+.status-valid {
+  color: #28a745;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.status-invalid {
+  color: #dc3545;
+  font-weight: 600;
+}
+
+.error-list {
+  margin-top: 0.5rem;
+  font-size: 0.8rem;
+}
+
+.error-item {
+  background: #f8d7da;
+  color: #721c24;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  margin-bottom: 0.25rem;
+}
+
+.remove-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.2rem;
+  padding: 0.25rem;
+  border-radius: 4px;
+  transition: background 0.3s ease;
+}
+
+.remove-btn:hover {
+  background: #fff0f0;
+}
+
+.import-summary {
+  background: #f8f9fa;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+}
+
+@media (max-width: 768px) {
+  .csv-table-container {
+    font-size: 0.9rem;
+  }
+  
+  .csv-table th,
+  .csv-table td {
+    padding: 0.5rem;
+  }
+}

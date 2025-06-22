@@ -1,0 +1,77 @@
+/* App layout styles */
+.app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  overflow-x: auto;
+}
+
+.app-main {
+  flex: 1;
+  padding: 2rem 0.5rem;
+  width: 100%;
+}
+
+/* Full width for CSV import - remove side padding */
+.app-main:has(.csv-import) {
+  padding: 2rem 0;
+}
+
+/* Fallback for browsers that don't support :has() */
+.app-main.csv-import-mode {
+  padding: 2rem 0;
+}
+
+.container {
+  max-width: none;
+  margin: 0 auto;
+  width: 90%;
+}
+
+/* Ensure container maintains 90% width on all screen sizes */
+@media (max-width: 480px) {
+  .container {
+    width: 90%;
+    max-width: none;
+  }
+}
+
+@media (min-width: 481px) and (max-width: 768px) {
+  .container {
+    width: 90%;
+    max-width: none;
+  }
+}
+
+@media (min-width: 769px) and (max-width: 1400px) {
+  .container {
+    width: 90%;
+    max-width: none;
+  }
+}
+
+@media (min-width: 1401px) {
+  .container {
+    width: 90%;
+    max-width: none;
+  }
+}
+
+.content-grid {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 2rem;
+  margin-top: 2rem;
+}
+
+@media (max-width: 768px) {
+  .content-grid {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+  
+  .app-main {
+    padding: 1.5rem 1rem;
+  }
+}
