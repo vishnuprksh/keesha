@@ -1,4 +1,4 @@
-export type AccountType = 'bank' | 'income' | 'expense' | 'asset' | 'liability';
+export type AccountType = 'bank' | 'income' | 'expense' | 'asset' | 'liability' | 'transaction';
 
 export interface Account {
   id: string;
@@ -101,6 +101,8 @@ export const getAccountTypeColor = (type: AccountType): string => {
       return '#17a2b8';
     case 'liability':
       return '#ffc107';
+    case 'transaction':
+      return '#6f42c1';
     default:
       return '#6c757d';
   }

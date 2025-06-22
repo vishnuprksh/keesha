@@ -77,6 +77,7 @@ const AccountManager: React.FC<AccountManagerProps> = ({
       case 'expense': return '📉';
       case 'asset': return '💎';
       case 'liability': return '💳';
+      case 'transaction': return '🔄';
       default: return '💰';
     }
   };
@@ -131,6 +132,7 @@ const AccountManager: React.FC<AccountManagerProps> = ({
                   <option value="expense">Expense Account</option>
                   <option value="asset">Asset Account</option>
                   <option value="liability">Liability Account</option>
+                  <option value="transaction">Transaction Account</option>
                 </select>
               </div>
             </div>
@@ -247,6 +249,16 @@ const AccountManager: React.FC<AccountManagerProps> = ({
               {formatBalance(
                 accounts
                   .filter(acc => acc.type === 'liability')
+                  .reduce((sum, acc) => sum + acc.balance, 0)
+              )}
+            </span>
+          </div>
+          <div className="summary-item">
+            <span className="label">Total Transaction Accounts:</span>
+            <span className="value">
+              {formatBalance(
+                accounts
+                  .filter(acc => acc.type === 'transaction')
                   .reduce((sum, acc) => sum + acc.balance, 0)
               )}
             </span>
