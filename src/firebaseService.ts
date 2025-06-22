@@ -5,19 +5,20 @@ import {
   updateDoc, 
   deleteDoc, 
   getDocs, 
+  getDoc,
   query, 
-  orderBy, 
   onSnapshot,
   Timestamp,
   writeBatch,
   where
 } from 'firebase/firestore';
 import { db, isFirebaseConfigured } from './firebase';
-import { Transaction, Account } from './types';
+import { Transaction, Account, CSVImportSession } from './types';
 
 // Collections
 const TRANSACTIONS_COLLECTION = 'transactions';
 const ACCOUNTS_COLLECTION = 'accounts';
+const CSV_IMPORTS_COLLECTION = 'csvImports';
 
 // Helper function to check Firebase configuration
 const ensureFirebaseConfigured = () => {
@@ -267,6 +268,128 @@ export const accountService = {
       console.error('Error batch importing accounts:', error);
       throw error;
     }
+  }
+};
+
+// CSV Import Services
+export const csvImportService = {
+  // Save a CSV import session
+  async saveImportSession(importSession: Omit<CSVImportSession, 'id'>, userId: string): Promise<string> {
+    const database = ensureFirebaseConfigured();
+    try {
+      const docRef = await addDoc(collection(database, CSV_IMPORTS_COLLECTION), {
+        ...importSession,
+        userId,
+        createdAt: Timestamp.now(),
+        updatedAt: Timestamp.now()
+      });
+      return docRef.id;
+    } catch (error) {
+      console.error('Error saving CSV import session:', error);
+      throw error;
+    }
+  },
+
+  // Update a CSV import session
+  async updateImportSession(id: string, updates: Partial<CSVImportSession>, userId: string): Promise<void> {
+    const database = ensureFirebaseConfigured();
+    try {
+      const docRef = doc(database, CSV_IMPORTS_COLLECTION, id);
+      await updateDoc(docRef, {
+        ...updates,
+        updatedAt: Timestamp.now()
+      });
+    } catch (error) {
+      console.error('Error updating CSV import session:', error);
+      throw error;
+    }
+  },
+
+  // Get all CSV import sessions for a user
+  async getImportSessions(userId: string): Promise<CSVImportSession[]> {
+    const database = ensureFirebaseConfigured();
+    try {
+      const q = query(
+        collection(database, CSV_IMPORTS_COLLECTION),
+        where('userId', '==', userId)
+        // Note: Removed orderBy to avoid requiring composite index
+        // Sort in memory by date descending
+      );
+      const querySnapshot = await getDocs(q);
+      const importSessions = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as CSVImportSession[];
+      
+      // Sort in memory by import date descending
+      importSessions.sort((a, b) => new Date(b.importDate).getTime() - new Date(a.importDate).getTime());
+      
+      return importSessions;
+    } catch (error) {
+      console.error('Error getting CSV import sessions:', error);
+      throw error;
+    }
+  },
+
+  // Get a specific CSV import session
+  async getImportSession(id: string): Promise<CSVImportSession | null> {
+    const database = ensureFirebaseConfigured();
+    try {
+      const docRef = doc(database, CSV_IMPORTS_COLLECTION, id);
+      const docSnap = await getDoc(docRef);
+      
+      if (!docSnap.exists()) {
+        return null;
+      }
+
+      return {
+        id: docSnap.id,
+        ...docSnap.data()
+      } as CSVImportSession;
+    } catch (error) {
+      console.error('Error getting CSV import session:', error);
+      throw error;
+    }
+  },
+
+  // Delete a CSV import session
+  async deleteImportSession(id: string): Promise<void> {
+    const database = ensureFirebaseConfigured();
+    try {
+      await deleteDoc(doc(database, CSV_IMPORTS_COLLECTION, id));
+    } catch (error) {
+      console.error('Error deleting CSV import session:', error);
+      throw error;
+    }
+  },
+
+  // Subscribe to CSV import sessions changes for a user
+  subscribeToImportSessions(userId: string, callback: (importSessions: CSVImportSession[]) => void): () => void {
+    const database = ensureFirebaseConfigured();
+    const q = query(
+      collection(database, CSV_IMPORTS_COLLECTION),
+      where('userId', '==', userId)
+    );
+
+    const unsubscribe = onSnapshot(q, 
+      (querySnapshot) => {
+        const importSessions = querySnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        })) as CSVImportSession[];
+        
+        // Sort in memory by import date descending
+        importSessions.sort((a, b) => new Date(b.importDate).getTime() - new Date(a.importDate).getTime());
+        
+        console.log(`Real-time update: received ${importSessions.length} CSV import sessions for user ${userId}`);
+        callback(importSessions);
+      },
+      (error) => {
+        console.error('Error in CSV import sessions subscription:', error);
+      }
+    );
+
+    return unsubscribe;
   }
 };
 

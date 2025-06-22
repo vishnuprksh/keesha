@@ -433,7 +433,7 @@ function App() {
           )}
           
           {activeTab === 'import' && (
-            <CSVImport accounts={accounts} onImportTransactions={importTransactions} />
+            <CSVImport accounts={accounts} onImportTransactions={importTransactions} userId={user?.uid || null} />
           )}
         </div>
       </main>

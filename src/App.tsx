@@ -392,7 +392,7 @@ function App() {
       <main className={`app-main ${activeTab === 'import' ? 'csv-import-mode' : ''}`}>
         {activeTab === 'import' ? (
           // CSV Import gets full width without container constraints
-          <CSVImport accounts={accounts} onImportTransactions={importTransactions} />
+          <CSVImport accounts={accounts} onImportTransactions={importTransactions} userId={user?.uid || null} />
         ) : (
           <div className="container">
             {activeTab === 'home' && (

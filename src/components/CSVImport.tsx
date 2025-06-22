@@ -3,18 +3,24 @@ import * as Papa from 'papaparse';
 import { Transaction, Account, CSVRow } from '../types';
 import { validateCSVTransaction } from '../utils/validation';
 import { useCSVImportState } from '../hooks/useCSVImportState';
+import { useCSVImportSessions } from '../hooks/useCSVImportSessions';
 import { calculateRunningBalances } from '../utils/balanceCalculator';
+import { exportCSVImportDataToCSV } from '../utils/csvExport';
 import DraggableCSVRow from './common/DraggableCSVRow';
 
 interface CSVImportProps {
   accounts: Account[];
   onImportTransactions: (transactions: Transaction[]) => void;
+  userId: string | null;
 }
 
-const CSVImport: React.FC<CSVImportProps> = ({ accounts, onImportTransactions }) => {
+const CSVImport: React.FC<CSVImportProps> = ({ accounts, onImportTransactions, userId }) => {
   const { csvData, setCsvData, selectedFile, setSelectedFile, clearImportState, hasPersistedData, lastSaved, isSaving } = useCSVImportState();
+  const { importSessions, saveImportSession, updateImportSession, deleteImportSession, getImportSession } = useCSVImportSessions(userId);
   const [isImporting, setIsImporting] = useState(false);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const [currentImportSessionId, setCurrentImportSessionId] = useState<string | null>(null);
+  const [showSavedImports, setShowSavedImports] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Calculate running balances for all transactions
@@ -184,11 +190,47 @@ const CSVImport: React.FC<CSVImportProps> = ({ accounts, onImportTransactions })
       await onImportTransactions(transactions);
       console.log(`CSV Import: Import completed successfully`);
       
-      // Reset the component
-      clearImportState();
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
+      // Save or update the import session to database
+      if (userId) {
+        try {
+          const validRows = csvData.filter(row => row.isValid).length;
+          const totalRows = csvData.length;
+          
+          if (currentImportSessionId) {
+            // Update existing session
+            const remainingRows = csvData.filter(row => !selectedRows.map(r => r.id).includes(row.id));
+            const status = remainingRows.filter(row => row.isValid && row.selected).length > 0 ? 'partial' : 'completed';
+            
+            await updateImportSession(currentImportSessionId, {
+              csvData: remainingRows,
+              importedRows: (await getImportSession(currentImportSessionId))?.importedRows || 0 + transactions.length,
+              status,
+              updatedAt: new Date()
+            });
+          } else {
+            // Create new session
+            const sessionName = selectedFile?.name || `Import ${new Date().toLocaleDateString()}`;
+            const sessionId = await saveImportSession({
+              name: sessionName,
+              fileName: selectedFile?.name || 'unknown.csv',
+              importDate: new Date().toISOString(),
+              totalRows,
+              validRows,
+              importedRows: transactions.length,
+              csvData: csvData.filter(row => !selectedRows.map(r => r.id).includes(row.id)), // Save remaining rows
+              status: csvData.filter(row => !selectedRows.map(r => r.id).includes(row.id) && row.isValid && row.selected).length > 0 ? 'partial' : 'completed'
+            });
+            setCurrentImportSessionId(sessionId);
+          }
+        } catch (sessionError) {
+          console.warn('Failed to save import session:', sessionError);
+          // Don't fail the import if session saving fails
+        }
       }
+      
+      // Remove only the imported transactions from the displayed table
+      const importedRowIds = new Set(selectedRows.map(row => row.id));
+      setCsvData(prev => prev.filter(row => !importedRowIds.has(row.id)));
       
       alert(`Successfully imported ${transactions.length} selected transactions! The data should appear on other pages within a few seconds due to real-time sync.`);
     } catch (error) {
@@ -219,6 +261,85 @@ const CSVImport: React.FC<CSVImportProps> = ({ accounts, onImportTransactions })
     a.download = 'transaction_template.csv';
     a.click();
     window.URL.revokeObjectURL(url);
+  };
+
+  const saveCurrentSession = async () => {
+    if (!userId || csvData.length === 0) return;
+
+    try {
+      const validRows = csvData.filter(row => row.isValid).length;
+      const totalRows = csvData.length;
+      const sessionName = selectedFile?.name || `Import ${new Date().toLocaleDateString()}`;
+      
+      if (currentImportSessionId) {
+        // Update existing session
+        await updateImportSession(currentImportSessionId, {
+          csvData,
+          updatedAt: new Date()
+        });
+        alert('Import session updated successfully!');
+      } else {
+        // Create new session
+        const sessionId = await saveImportSession({
+          name: sessionName,
+          fileName: selectedFile?.name || 'unknown.csv',
+          importDate: new Date().toISOString(),
+          totalRows,
+          validRows,
+          importedRows: 0,
+          csvData,
+          status: 'pending'
+        });
+        setCurrentImportSessionId(sessionId);
+        alert('Import session saved successfully!');
+      }
+    } catch (error) {
+      console.error('Error saving session:', error);
+      alert('Failed to save import session. Please try again.');
+    }
+  };
+
+  const downloadEditedCSV = () => {
+    if (csvData.length === 0) {
+      alert('No data to download. Please upload and edit a CSV file first.');
+      return;
+    }
+
+    const filename = selectedFile?.name 
+      ? `edited_${selectedFile.name}` 
+      : `edited_import_${new Date().toISOString().split('T')[0]}.csv`;
+    
+    exportCSVImportDataToCSV(csvData, accounts, filename);
+  };
+
+  const loadImportSession = async (sessionId: string) => {
+    try {
+      const session = await getImportSession(sessionId);
+      if (session) {
+        setCsvData(session.csvData);
+        setCurrentImportSessionId(sessionId);
+        setSelectedFile(new File([], session.fileName, { type: 'text/csv' }));
+        alert(`Loaded import session: ${session.name}`);
+      }
+    } catch (error) {
+      console.error('Error loading session:', error);
+      alert('Failed to load import session. Please try again.');
+    }
+  };
+
+  const deleteSession = async (sessionId: string) => {
+    if (window.confirm('Are you sure you want to delete this import session?')) {
+      try {
+        await deleteImportSession(sessionId);
+        if (currentImportSessionId === sessionId) {
+          setCurrentImportSessionId(null);
+        }
+        alert('Import session deleted successfully!');
+      } catch (error) {
+        console.error('Error deleting session:', error);
+        alert('Failed to delete import session. Please try again.');
+      }
+    }
   };
 
   return (
@@ -260,7 +381,59 @@ const CSVImport: React.FC<CSVImportProps> = ({ accounts, onImportTransactions })
           <button onClick={downloadTemplate} className="template-btn">
             Download Template
           </button>
+          {userId && (
+            <button 
+              onClick={() => setShowSavedImports(!showSavedImports)} 
+              className="template-btn"
+              title="View saved import sessions"
+            >
+              📂 Saved Imports ({importSessions.length})
+            </button>
+          )}
         </div>
+
+        {/* Saved Imports Section */}
+        {showSavedImports && userId && (
+          <div className="saved-imports-section">
+            <h4>📂 Saved Import Sessions</h4>
+            {importSessions.length === 0 ? (
+              <p className="no-imports">No saved import sessions found.</p>
+            ) : (
+              <div className="import-sessions-list">
+                {importSessions.map((session) => (
+                  <div key={session.id} className="import-session-item">
+                    <div className="session-info">
+                      <strong>{session.name}</strong>
+                      <span className="session-details">
+                        {session.totalRows} rows, {session.importedRows} imported
+                        <span className={`status-badge ${session.status}`}>
+                          {session.status}
+                        </span>
+                      </span>
+                      <small>{new Date(session.importDate).toLocaleString()}</small>
+                    </div>
+                    <div className="session-actions">
+                      <button 
+                        onClick={() => loadImportSession(session.id)}
+                        className="load-btn"
+                        title="Load this import session"
+                      >
+                        📂 Load
+                      </button>
+                      <button 
+                        onClick={() => deleteSession(session.id)}
+                        className="delete-btn"
+                        title="Delete this import session"
+                      >
+                        🗑️ Delete
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
         {isImporting && <p className="loading">Parsing CSV file...</p>}
       </div>
@@ -295,16 +468,34 @@ const CSVImport: React.FC<CSVImportProps> = ({ accounts, onImportTransactions })
                     Deselect All
                   </button>
                 </div>
-                <button 
-                  onClick={handleImport}
-                  className="import-btn"
-                  disabled={csvData.filter(row => row.selected && row.isValid).length === 0 || isImporting}
-                >
-                  {isImporting 
-                    ? `Importing ${csvData.filter(row => row.selected && row.isValid).length} transactions...`
-                    : `Import ${csvData.filter(row => row.selected && row.isValid).length} Selected Transactions`
-                  }
-                </button>
+                <div className="action-buttons">
+                  {userId && (
+                    <button 
+                      onClick={saveCurrentSession}
+                      className="save-btn"
+                      title="Save current import session to database"
+                    >
+                      💾 Save Session
+                    </button>
+                  )}
+                  <button 
+                    onClick={downloadEditedCSV}
+                    className="download-btn"
+                    title="Download edited CSV with your changes"
+                  >
+                    📥 Download Edited CSV
+                  </button>
+                  <button 
+                    onClick={handleImport}
+                    className="import-btn"
+                    disabled={csvData.filter(row => row.selected && row.isValid).length === 0 || isImporting}
+                  >
+                    {isImporting 
+                      ? `Importing ${csvData.filter(row => row.selected && row.isValid).length} transactions...`
+                      : `Import ${csvData.filter(row => row.selected && row.isValid).length} Selected Transactions`
+                    }
+                  </button>
+                </div>
               </div>
             </div>
           </div>

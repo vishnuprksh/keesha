@@ -34,6 +34,22 @@ export interface CSVRow {
   selected: boolean;
 }
 
+// CSV Import Session types
+export interface CSVImportSession {
+  id: string;
+  name: string;
+  fileName: string;
+  importDate: string;
+  totalRows: number;
+  validRows: number;
+  importedRows: number;
+  csvData: CSVRow[];
+  status: 'pending' | 'completed' | 'partial';
+  userId?: string;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
 // Keep Expense interface for backward compatibility during migration
 export interface Expense {
   id: string;
