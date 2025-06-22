@@ -1,20 +1,8 @@
 import React, { useState, useRef } from 'react';
-import Papa from 'papaparse';
-import { Transaction, Account } from '../types';
+import * as Papa from 'papaparse';
+import { Transaction, Account, CSVRow } from '../types';
 import { validateCSVTransaction } from '../utils/validation';
-
-interface CSVRow {
-  id: string;
-  title: string;
-  amount: string;
-  fromAccountId: string;
-  toAccountId: string;
-  date: string;
-  description: string;
-  isImportant: string;
-  isValid: boolean;
-  errors: string[];
-}
+import { useCSVImportState } from '../hooks/useCSVImportState';
 
 interface CSVImportProps {
   accounts: Account[];
@@ -22,9 +10,8 @@ interface CSVImportProps {
 }
 
 const CSVImport: React.FC<CSVImportProps> = ({ accounts, onImportTransactions }) => {
-  const [csvData, setCsvData] = useState<CSVRow[]>([]);
+  const { csvData, setCsvData, selectedFile, setSelectedFile, clearImportState, hasPersistedData, lastSaved, isSaving } = useCSVImportState();
   const [isImporting, setIsImporting] = useState(false);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const validateRow = (row: any): CSVRow => {
@@ -122,8 +109,7 @@ const CSVImport: React.FC<CSVImportProps> = ({ accounts, onImportTransactions })
       console.log(`CSV Import: Import completed successfully`);
       
       // Reset the component
-      setCsvData([]);
-      setSelectedFile(null);
+      clearImportState();
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
@@ -164,6 +150,22 @@ const CSVImport: React.FC<CSVImportProps> = ({ accounts, onImportTransactions })
       <div className="csv-import-header">
         <h2>📄 Import Transactions from CSV</h2>
         <p>Upload a CSV file to import multiple transactions at once</p>
+        {hasPersistedData && (
+          <div className="auto-save-notice">
+            <span className="auto-save-icon">💾</span>
+            <span>
+              Auto-saved data restored - your previous CSV import is still here!
+              {lastSaved && (
+                <small style={{ display: 'block', opacity: 0.9, fontSize: '0.9em' }}>
+                  Last saved: {lastSaved.toLocaleString()}
+                </small>
+              )}
+            </span>
+            <button onClick={clearImportState} className="clear-data-btn" title="Clear saved data">
+              Clear Data
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="csv-upload-section">
@@ -191,17 +193,25 @@ const CSVImport: React.FC<CSVImportProps> = ({ accounts, onImportTransactions })
         <div className="csv-data-section">
           <div className="data-header">
             <h3>Preview & Edit Data ({csvData.length} rows)</h3>
-            <div className="import-actions">
-              <button 
-                onClick={handleImport}
-                className="import-btn"
-                disabled={csvData.filter(row => row.isValid).length === 0 || isImporting}
-              >
-                {isImporting 
-                  ? `Importing ${csvData.filter(row => row.isValid).length} transactions...`
-                  : `Import ${csvData.filter(row => row.isValid).length} Valid Transactions`
-                }
-              </button>
+            <div className="data-header-right">
+              {isSaving && (
+                <span className="auto-save-indicator">
+                  <span className="saving-dot"></span>
+                  Auto-saving...
+                </span>
+              )}
+              <div className="import-actions">
+                <button 
+                  onClick={handleImport}
+                  className="import-btn"
+                  disabled={csvData.filter(row => row.isValid).length === 0 || isImporting}
+                >
+                  {isImporting 
+                    ? `Importing ${csvData.filter(row => row.isValid).length} transactions...`
+                    : `Import ${csvData.filter(row => row.isValid).length} Valid Transactions`
+                  }
+                </button>
+              </div>
             </div>
           </div>
 

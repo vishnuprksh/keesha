@@ -19,6 +19,20 @@ export interface Transaction {
   isImportant?: boolean;
 }
 
+// CSV Import related types
+export interface CSVRow {
+  id: string;
+  title: string;
+  amount: string;
+  fromAccountId: string;
+  toAccountId: string;
+  date: string;
+  description: string;
+  isImportant: string;
+  isValid: boolean;
+  errors: string[];
+}
+
 // Keep Expense interface for backward compatibility during migration
 export interface Expense {
   id: string;

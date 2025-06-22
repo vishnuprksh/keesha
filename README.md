@@ -11,6 +11,7 @@ Keesha now supports Firebase for real-time data synchronization across devices. 
 - ✅ Offline support with automatic sync
 - ✅ Cross-device accessibility
 - ✅ Secure cloud backup
+- ✅ Auto-save feature
 
 ### Quick Setup
 1. Create a Firebase project at [Firebase Console](https://console.firebase.google.com/)
@@ -90,3 +91,18 @@ REACT_APP_FIREBASE_APP_ID=your_app_id
 - **Without Firebase**: The app falls back to localStorage for data storage
 - **With Firebase**: Real-time sync, cloud backup, and cross-device access
 - **Migration**: Existing localStorage data is automatically migrated to Firebase
+
+### CSV Import Auto-Save
+
+The CSV import feature includes intelligent auto-save functionality:
+
+- **Automatic persistence**: Imported CSV data is automatically saved to localStorage
+- **Navigation-safe**: Data persists when switching between pages or creating accounts
+- **24-hour retention**: Auto-saved data expires after 24 hours to prevent clutter
+- **Visual indicators**: Shows when data is being saved and when restored
+- **Manual control**: Clear button to manually remove auto-saved data
+- **Smart restoration**: Only restores recent, non-expired data
+
+This ensures you never lose your CSV import progress, even if you need to navigate away to create missing accounts or make other changes.
+
+## 🛠️ Development
