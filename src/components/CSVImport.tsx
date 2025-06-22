@@ -1,9 +1,11 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
 import * as Papa from 'papaparse';
 import { Transaction, Account, CSVRow } from '../types';
 import { validateCSVTransaction } from '../utils/validation';
 import { useCSVImportState } from '../hooks/useCSVImportState';
+import { calculateRunningBalances } from '../utils/balanceCalculator';
 import AccountSelect from './forms/AccountSelect';
+import DraggableCSVRow from './common/DraggableCSVRow';
 
 interface CSVImportProps {
   accounts: Account[];
@@ -13,7 +15,14 @@ interface CSVImportProps {
 const CSVImport: React.FC<CSVImportProps> = ({ accounts, onImportTransactions }) => {
   const { csvData, setCsvData, selectedFile, setSelectedFile, clearImportState, hasPersistedData, lastSaved, isSaving } = useCSVImportState();
   const [isImporting, setIsImporting] = useState(false);
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Calculate running balances for all transactions
+  const runningBalancesData = useMemo(() => {
+    if (csvData.length === 0) return [];
+    return calculateRunningBalances(csvData, accounts, true);
+  }, [csvData, accounts]);
 
   const validateRow = (row: any): CSVRow => {
     const validation = validateCSVTransaction(row, accounts);
@@ -81,6 +90,49 @@ const CSVImport: React.FC<CSVImportProps> = ({ accounts, onImportTransactions })
 
   const removeRow = (index: number) => {
     setCsvData(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const reorderRows = (fromIndex: number, toIndex: number) => {
+    setCsvData(prev => {
+      const newData = [...prev];
+      const [movedItem] = newData.splice(fromIndex, 1);
+      newData.splice(toIndex, 0, movedItem);
+      return newData;
+    });
+  };
+
+  const insertRow = (index: number) => {
+    const newRow: CSVRow = {
+      id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+      title: '',
+      amount: '',
+      fromAccountId: '',
+      toAccountId: '',
+      date: new Date().toISOString().split('T')[0], // Today's date
+      description: '',
+      isImportant: 'false',
+      isValid: false,
+      errors: ['Title is required', 'Amount must be a positive number', 'From account is required', 'To account is required']
+    };
+
+    setCsvData(prev => {
+      const newData = [...prev];
+      newData.splice(index, 0, newRow);
+      return newData;
+    });
+  };
+
+  const handleDragStart = (index: number) => {
+    setDraggedIndex(index);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedIndex(null);
+  };
+
+  const handleDragOver = (index: number) => {
+    // This is called when dragging over a target row
+    // We don't need to do anything here as the visual feedback is handled in DraggableCSVRow
   };
 
   const handleImport = async () => {
@@ -220,98 +272,56 @@ const CSVImport: React.FC<CSVImportProps> = ({ accounts, onImportTransactions })
             <table className="csv-table">
               <thead>
                 <tr>
+                  <th className="drag-header">⋮⋮</th>
                   <th>Title</th>
                   <th>Amount</th>
                   <th>From Account</th>
                   <th>To Account</th>
                   <th>Date</th>
                   <th>Description</th>
+                  <th>Balance After</th>
                   <th>Status</th>
                   <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {csvData.map((row, index) => (
-                  <tr key={row.id} className={row.isValid ? 'valid-row' : 'invalid-row'}>
-                    <td>
-                      <input
-                        type="text"
-                        value={row.title}
-                        onChange={(e) => updateRow(index, 'title', e.target.value)}
-                        className={row.errors.some(e => e.includes('Title')) ? 'error' : ''}
-                      />
-                    </td>
-                    <td>
-                      <input
-                        type="number"
-                        step="0.01"
-                        value={row.amount}
-                        onChange={(e) => updateRow(index, 'amount', e.target.value)}
-                        className={row.errors.some(e => e.includes('Amount')) ? 'error' : ''}
-                      />
-                    </td>
-                    <td>
-                      <AccountSelect
-                        accounts={accounts}
-                        value={row.fromAccountId}
-                        onChange={(value) => updateRow(index, 'fromAccountId', value)}
-                        placeholder="Select From Account"
-                        name={`fromAccount-${index}`}
-                        error={row.errors.some(e => e.includes('From account'))}
-                      />
-                    </td>
-                    <td>
-                      <AccountSelect
-                        accounts={accounts}
-                        value={row.toAccountId}
-                        onChange={(value) => updateRow(index, 'toAccountId', value)}
-                        placeholder="Select To Account"
-                        excludeAccount={row.fromAccountId}
-                        name={`toAccount-${index}`}
-                        error={row.errors.some(e => e.includes('To account'))}
-                      />
-                    </td>
-                    <td>
-                      <input
-                        type="date"
-                        value={row.date}
-                        onChange={(e) => updateRow(index, 'date', e.target.value)}
-                        className={row.errors.some(e => e.includes('Date')) ? 'error' : ''}
-                      />
-                    </td>
-                    <td>
-                      <input
-                        type="text"
-                        value={row.description}
-                        onChange={(e) => updateRow(index, 'description', e.target.value)}
-                        placeholder="Optional"
-                      />
-                    </td>
-                    <td className={`status ${row.isValid ? 'valid' : 'invalid'}`}>
-                      {row.isValid ? (
-                        <span className="status-valid">✓ Valid</span>
-                      ) : (
-                        <div className="status-invalid">
-                          <span>✗ Invalid</span>
-                          <div className="error-list">
-                            {row.errors.map((error, i) => (
-                              <div key={i} className="error-item">{error}</div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </td>
-                    <td>
+                {csvData.map((row, index) => {
+                  const balanceData = runningBalancesData.find(
+                    (item, idx) => idx === index
+                  );
+                  const runningBalances = balanceData?.runningBalances || {};
+
+                  return (
+                    <DraggableCSVRow
+                      key={row.id}
+                      row={row}
+                      index={index}
+                      accounts={accounts}
+                      runningBalances={runningBalances}
+                      onUpdateRow={updateRow}
+                      onRemoveRow={removeRow}
+                      onReorderRows={reorderRows}
+                      onInsertRow={insertRow}
+                      draggedIndex={draggedIndex}
+                      onDragStart={handleDragStart}
+                      onDragEnd={handleDragEnd}
+                      onDragOver={handleDragOver}
+                    />
+                  );
+                })}
+                {csvData.length > 0 && (
+                  <tr className="add-transaction-row">
+                    <td colSpan={10}>
                       <button
-                        onClick={() => removeRow(index)}
-                        className="remove-btn"
-                        title="Remove this row"
+                        onClick={() => insertRow(csvData.length)}
+                        className="add-transaction-btn"
+                        type="button"
                       >
-                        🗑️
+                        ➕ Add New Transaction
                       </button>
                     </td>
                   </tr>
-                ))}
+                )}
               </tbody>
             </table>
           </div>

@@ -389,53 +389,54 @@ function App() {
         </div>
       </nav>
 
-      <main className="app-main">
-        <div className="container">
-          {activeTab === 'home' && (
-            <>
-              <TransactionSummary transactions={transactions} accounts={accounts} />
-              <div className="content-grid">
-                <TransactionForm accounts={accounts} onAddTransaction={addTransaction} />
-                <TransactionList 
-                  transactions={transactions}
-                  accounts={accounts}
-                  onDeleteTransaction={deleteTransaction}
-                  onUpdateTransaction={updateTransaction}
-                />
-              </div>
-            </>
-          )}
-          
-          {activeTab === 'transactions' && (
-            <TransactionsPage
-              transactions={transactions}
-              accounts={accounts}
-              onDeleteTransaction={deleteTransaction}
-              onUpdateTransaction={updateTransaction}
-              onToggleImportant={toggleImportant}
-            />
-          )}
-          
-          {activeTab === 'accounts' && (
-            <AccountManager
-              accounts={accounts}
-              onAddAccount={addAccount}
-              onUpdateAccount={updateAccount}
-              onDeleteAccount={deleteAccount}
-            />
-          )}
-          
-          {activeTab === 'stats' && (
-            <StatsPage
-              transactions={transactions}
-              accounts={accounts}
-            />
-          )}
-          
-          {activeTab === 'import' && (
-            <CSVImport accounts={accounts} onImportTransactions={importTransactions} />
-          )}
-        </div>
+      <main className={`app-main ${activeTab === 'import' ? 'csv-import-mode' : ''}`}>
+        {activeTab === 'import' ? (
+          // CSV Import gets full width without container constraints
+          <CSVImport accounts={accounts} onImportTransactions={importTransactions} />
+        ) : (
+          <div className="container">
+            {activeTab === 'home' && (
+              <>
+                <TransactionSummary transactions={transactions} accounts={accounts} />
+                <div className="content-grid">
+                  <TransactionForm accounts={accounts} onAddTransaction={addTransaction} />
+                  <TransactionList 
+                    transactions={transactions}
+                    accounts={accounts}
+                    onDeleteTransaction={deleteTransaction}
+                    onUpdateTransaction={updateTransaction}
+                  />
+                </div>
+              </>
+            )}
+            
+            {activeTab === 'transactions' && (
+              <TransactionsPage
+                transactions={transactions}
+                accounts={accounts}
+                onDeleteTransaction={deleteTransaction}
+                onUpdateTransaction={updateTransaction}
+                onToggleImportant={toggleImportant}
+              />
+            )}
+            
+            {activeTab === 'accounts' && (
+              <AccountManager
+                accounts={accounts}
+                onAddAccount={addAccount}
+                onUpdateAccount={updateAccount}
+                onDeleteAccount={deleteAccount}
+              />
+            )}
+            
+            {activeTab === 'stats' && (
+              <StatsPage
+                transactions={transactions}
+                accounts={accounts}
+              />
+            )}
+          </div>
+        )}
       </main>
 
       {/* Sync Status Indicator */}

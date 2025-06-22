@@ -4,6 +4,11 @@
   box-sizing: border-box;
 }
 
+html, body {
+  width: 100%;
+  overflow-x: auto;
+}
+
 body {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -15,6 +20,8 @@ body {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  width: 100%;
+  overflow-x: auto;
 }
 
 .app-header {
@@ -42,12 +49,24 @@ body {
 
 .app-main {
   flex: 1;
-  padding: 2rem 1rem;
+  padding: 2rem 0.5rem;
+  width: 100%;
+}
+
+/* Full width for CSV import - remove side padding */
+.app-main:has(.csv-import) {
+  padding: 2rem 0;
+}
+
+/* Fallback for browsers that don't support :has() */
+.app-main.csv-import-mode {
+  padding: 2rem 0;
 }
 
 .container {
   max-width: 1200px;
   margin: 0 auto;
+  width: 90%;
 }
 
 .content-grid {
@@ -331,7 +350,11 @@ body {
   border-radius: 12px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
   padding: 2rem;
-  margin-bottom: 2rem;
+  margin: 0 auto 2rem auto;
+  width: 90%;
+  max-width: 1400px;
+  min-width: 800px;
+  overflow: visible;
 }
 
 .csv-import-header {
@@ -535,12 +558,14 @@ body {
   border: 1px solid #ddd;
   border-radius: 8px;
   margin-bottom: 1rem;
+  width: 100%;
+  min-width: 100%;
 }
 
 .csv-table {
   width: 100%;
   border-collapse: collapse;
-  min-width: 800px;
+  min-width: 1800px;
 }
 
 .csv-table th {
@@ -552,12 +577,14 @@ body {
   border-bottom: 2px solid #dee2e6;
   position: sticky;
   top: 0;
+  font-size: 16px;
 }
 
 .csv-table td {
-  padding: 0.75rem;
+  padding: 1rem;
   border-bottom: 1px solid #dee2e6;
-  vertical-align: top;
+  vertical-align: middle;
+  font-size: 15px;
 }
 
 .csv-table tr.valid-row {
@@ -571,10 +598,12 @@ body {
 .csv-table input,
 .csv-table select {
   width: 100%;
-  padding: 0.5rem;
+  padding: 10px 15px;
   border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 0.9rem;
+  border-radius: 6px;
+  font-size: 15px;
+  min-height: 48px;
+  box-sizing: border-box;
 }
 
 .csv-table input.error,
@@ -597,6 +626,7 @@ body {
 .status-valid {
   color: #28a745;
   font-weight: 600;
+  font-size: 14px;
 }
 
 .status-invalid {
@@ -679,9 +709,10 @@ body {
 }
 
 .nav-container {
-  max-width: 1200px;
+  max-width: none;
   margin: 0 auto;
   padding: 0 1rem;
+  width: 100%;
 }
 
 .nav-tabs {
@@ -1590,14 +1621,6 @@ body {
   border-radius: 3px;
   cursor: pointer;
   font-size: 0.8rem;
-}
-
-.btn-save:hover {
-  background: #218838;
-}
-
-.btn-cancel:hover {
-  background: #5a6268;
 }
 
 /* Compact Transactions Page Styles */
@@ -2596,4 +2619,459 @@ body {
 .transactions-table .searchable-select .dropdown-menu input {
   font-size: 0.8rem;
   padding: 4px 8px;
+}
+
+/* Enhanced CSV Import Styles */
+
+.drag-header {
+  width: 80px;
+  text-align: center;
+  background: #f8f9fa;
+  font-size: 16px;
+  opacity: 0.6;
+  padding: 1rem;
+}
+
+.csv-row {
+  transition: all 0.2s ease;
+  position: relative;
+  height: 80px;
+}
+
+.csv-row.dragging {
+  opacity: 0.5;
+  transform: scale(0.98);
+  background: #e3f2fd;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  z-index: 1000;
+}
+
+.csv-row.drag-over {
+  background: #f3e5f5;
+}
+
+.drag-handle {
+  width: 80px;
+  text-align: center;
+  vertical-align: middle;
+  cursor: grab;
+  user-select: none;
+  padding: 1rem;
+}
+
+.drag-handle:active {
+  cursor: grabbing;
+}
+
+.drag-icon {
+  color: #666;
+  font-size: 20px;
+  display: inline-block;
+  line-height: 1;
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
+}
+
+.drag-handle:hover .drag-icon {
+  opacity: 1;
+  color: #2196f3;
+}
+
+.drag-insert-indicator {
+  height: 4px;
+  background: transparent;
+}
+
+.insert-line {
+  height: 3px;
+  background: linear-gradient(90deg, #2196f3, #4caf50);
+  margin: 2px 0;
+  border-radius: 2px;
+  position: relative;
+  animation: insertPulse 1s ease-in-out infinite alternate;
+}
+
+.insert-text {
+  position: absolute;
+  top: -20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #2196f3;
+  color: white;
+  padding: 4px 12px;
+  border-radius: 4px;
+  font-size: 12px;
+  white-space: nowrap;
+  opacity: 0.9;
+}
+
+@keyframes insertPulse {
+  from { opacity: 0.6; }
+  to { opacity: 1; }
+}
+
+.balance-column {
+  min-width: 350px;
+  max-width: 450px;
+  padding: 1rem;
+}
+
+.balance-display {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 15px;
+}
+
+.balance-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 16px;
+  background: #f8f9fa;
+  border-radius: 6px;
+  border: 1px solid #e0e0e0;
+  min-height: 36px;
+}
+
+.account-name {
+  font-weight: 500;
+  color: #555;
+  font-size: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 180px;
+}
+
+.balance-amount {
+  font-weight: 600;
+  font-size: 15px;
+}
+
+.balance-amount.positive {
+  color: #28a745;
+}
+
+.balance-amount.negative {
+  color: #dc3545;
+}
+
+.actions-column {
+  width: 180px;
+  text-align: center;
+  padding: 1rem;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  align-items: center;
+}
+
+.insert-btn {
+  background: #28a745;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: 18px;
+  transition: all 0.2s ease;
+  min-width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.insert-btn:hover {
+  background: #218838;
+  transform: scale(1.05);
+}
+
+.remove-btn {
+  background: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: 18px;
+  transition: all 0.2s ease;
+  min-width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.remove-btn:hover {
+  background: #c82333;
+  transform: scale(1.05);
+}
+
+.add-transaction-row {
+  background: #f8f9fa;
+  border-top: 2px dashed #dee2e6;
+}
+
+.add-transaction-btn {
+  width: 100%;
+  padding: 16px;
+  background: linear-gradient(45deg, #28a745, #20c997);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin: 10px 0;
+}
+
+.add-transaction-btn:hover {
+  background: linear-gradient(45deg, #218838, #1ba085);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+}
+
+.csv-table .csv-row input {
+  padding: 10px 15px;
+  font-size: 15px;
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  width: 100%;
+  min-height: 48px;
+  box-sizing: border-box;
+}
+
+.csv-table .csv-row input:focus {
+  outline: none;
+  border-color: #2196f3;
+  box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.1);
+}
+
+.csv-table .csv-row input.error {
+  border-color: #dc3545;
+  background: #fff5f5;
+}
+
+/* CSV Table Header Column Sizing */
+.csv-table th:nth-child(1) { /* Drag handle */
+  width: 80px;
+  min-width: 80px;
+}
+
+.csv-table th:nth-child(2) { /* Title */
+  width: 25%;
+  min-width: 300px;
+}
+
+.csv-table th:nth-child(3) { /* Amount */
+  width: 12%;
+  min-width: 180px;
+}
+
+.csv-table th:nth-child(4) { /* From Account */
+  width: 18%;
+  min-width: 250px;
+}
+
+.csv-table th:nth-child(5) { /* To Account */
+  width: 18%;
+  min-width: 250px;
+}
+
+.csv-table th:nth-child(6) { /* Date */
+  width: 12%;
+  min-width: 200px;
+}
+
+.csv-table th:nth-child(7) { /* Description */
+  width: 20%;
+  min-width: 280px;
+}
+
+.csv-table th:nth-child(8) { /* Balance After */
+  width: 25%;
+  min-width: 350px;
+}
+
+.csv-table th:nth-child(9) { /* Status */
+  width: 15%;
+  min-width: 200px;
+}
+
+.csv-table th:nth-child(10) { /* Actions */
+  width: 180px;
+  min-width: 180px;
+}
+
+/* Enhanced CSV Import Responsive Adjustments */
+@media (max-width: 1400px) {
+  .csv-import {
+    width: 90%;
+    max-width: 1200px;
+  }
+  
+  .csv-table {
+    min-width: 1600px;
+  }
+}
+
+@media (max-width: 1200px) {
+  .csv-import {
+    width: 90%;
+    padding: 1.5rem;
+    max-width: 1000px;
+  }
+  
+  .csv-table {
+    min-width: 1400px;
+  }
+  
+  .balance-column {
+    min-width: 160px;
+    max-width: 180px;
+  }
+  
+  .account-name {
+    max-width: 70px;
+    font-size: 12px;
+  }
+  
+  .balance-amount {
+    font-size: 12px;
+  }
+  
+  .csv-table .csv-row input {
+    padding: 6px 10px;
+    font-size: 13px;
+    min-height: 36px;
+  }
+  
+  .insert-btn, .remove-btn {
+    min-width: 28px;
+    height: 28px;
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 768px) {
+  .csv-import {
+    padding: 1rem;
+    margin: 0 auto;
+    width: 95%;
+  }
+  
+  .csv-table-container {
+    overflow-x: auto;
+  }
+  
+  .csv-table {
+    min-width: 900px;
+  }
+  
+  .csv-row {
+    height: 55px;
+  }
+  
+  .balance-display {
+    font-size: 12px;
+  }
+  
+  .balance-item {
+    padding: 3px 6px;
+    min-height: 22px;
+  }
+  
+  .account-name {
+    max-width: 60px;
+    font-size: 11px;
+  }
+  
+  .balance-amount {
+    font-size: 11px;
+  }
+  
+  .csv-table .csv-row input {
+    padding: 5px 8px;
+    font-size: 12px;
+    min-height: 32px;
+  }
+  
+  .insert-btn, .remove-btn {
+    min-width: 24px;
+    height: 24px;
+    font-size: 13px;
+    padding: 4px 6px;
+  }
+  
+  .actions-column {
+    width: 90px;
+  }
+  
+  .action-buttons {
+    gap: 4px;
+  }
+  
+  .add-transaction-btn {
+    padding: 12px;
+    font-size: 14px;
+  }
+}
+
+/* Maintain 90% width on large screens */
+@media (min-width: 1400px) {
+  .csv-import {
+    width: 90%;
+    max-width: 1600px;
+    margin: 0 auto;
+    padding: 3rem;
+  }
+  
+  .csv-table {
+    min-width: 2000px;
+  }
+}
+
+@media (min-width: 1920px) {
+  .csv-import {
+    width: 90%;
+    max-width: 1800px;
+    margin: 0 auto;
+    padding: 3rem;
+  }
+  
+  .csv-table {
+    min-width: 2200px;
+  }
+}
+
+@media (min-width: 2560px) {
+  .csv-import {
+    width: 90%;
+    max-width: 2200px;
+    margin: 0 auto;
+    padding: 4rem;
+  }
+  
+  .csv-table {
+    min-width: 2600px;
+  }
+  
+  /* Even larger columns for 4K */
+  .csv-table th:nth-child(2) { /* Title */
+    min-width: 400px;
+  }
+  
+  .csv-table th:nth-child(7) { /* Description */
+    min-width: 350px;
+  }
+  
+  .csv-table th:nth-child(8) { /* Balance After */
+    min-width: 450px;
+  }
 }
