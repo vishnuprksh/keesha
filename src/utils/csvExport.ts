@@ -8,6 +8,7 @@ export interface CSVExportRow {
   toAccount: string;
   date: string;
   description: string;
+  isImportant: boolean;
 }
 
 export const exportTransactionsToCSV = (
@@ -25,11 +26,12 @@ export const exportTransactionsToCSV = (
     fromAccount: accountMap.get(transaction.fromAccountId) || 'Unknown Account',
     toAccount: accountMap.get(transaction.toAccountId) || 'Unknown Account',
     date: transaction.date,
-    description: transaction.description || ''
+    description: transaction.description || '',
+    isImportant: transaction.isImportant || false
   }));
 
   // Generate CSV content (matching the exact format used in CSV import)
-  const headers = ['title', 'amount', 'fromAccount', 'toAccount', 'date', 'description'];
+  const headers = ['title', 'amount', 'fromAccount', 'toAccount', 'date', 'description', 'isImportant'];
   const csvContent = [
     headers.join(','),
     ...csvData.map(row => [
@@ -38,7 +40,8 @@ export const exportTransactionsToCSV = (
       `"${row.fromAccount}"`,
       `"${row.toAccount}"`,
       `"${row.date}"`,
-      `"${row.description}"`
+      `"${row.description}"`,
+      row.isImportant.toString()
     ].join(','))
   ].join('\n');
 

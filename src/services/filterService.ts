@@ -11,6 +11,7 @@ export interface TransactionFilters {
   dateTo: string;
   amountMin: string;
   amountMax: string;
+  showImportantOnly: boolean;
 }
 
 export const filterTransactions = (
@@ -77,13 +78,18 @@ export const filterTransactions = (
       return false;
     }
 
+    // Important transactions filter
+    if (filters.showImportantOnly && !transaction.isImportant) {
+      return false;
+    }
+
     return true;
   });
 };
 
 export const sortTransactions = (
   transactions: Transaction[],
-  sortBy: 'date' | 'amount' | 'title',
+  sortBy: 'date' | 'amount' | 'title' | 'important',
   sortOrder: 'asc' | 'desc'
 ): Transaction[] => {
   return [...transactions].sort((a, b) => {
@@ -98,6 +104,16 @@ export const sortTransactions = (
         break;
       case 'title':
         comparison = a.title.localeCompare(b.title);
+        break;
+      case 'important':
+        // Sort important first (true comes before false)
+        const aImportant = a.isImportant ? 1 : 0;
+        const bImportant = b.isImportant ? 1 : 0;
+        comparison = bImportant - aImportant;
+        // If both have same importance, sort by date as secondary
+        if (comparison === 0) {
+          comparison = new Date(b.date).getTime() - new Date(a.date).getTime();
+        }
         break;
     }
     

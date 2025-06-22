@@ -10,13 +10,15 @@ interface TransactionsPageProps {
   accounts: Account[];
   onDeleteTransaction: (id: string) => void;
   onUpdateTransaction: (id: string, transaction: Omit<Transaction, 'id'>) => void;
+  onToggleImportant: (id: string) => void;
 }
 
 const TransactionsPage: React.FC<TransactionsPageProps> = ({
   transactions,
   accounts,
   onDeleteTransaction,
-  onUpdateTransaction
+  onUpdateTransaction,
+  onToggleImportant
 }) => {
   const [filters, setFilters] = useState<TransactionFilters>({
     search: '',
@@ -25,10 +27,11 @@ const TransactionsPage: React.FC<TransactionsPageProps> = ({
     dateFrom: '',
     dateTo: '',
     amountMin: '',
-    amountMax: ''
+    amountMax: '',
+    showImportantOnly: false
   });
 
-  const [sortBy, setSortBy] = useState<'date' | 'amount' | 'title'>('date');
+  const [sortBy, setSortBy] = useState<'date' | 'amount' | 'title' | 'important'>('date');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<Transaction | null>(null);
@@ -47,7 +50,10 @@ const TransactionsPage: React.FC<TransactionsPageProps> = ({
   }, [transactions, accounts, filters, sortBy, sortOrder]);
 
   const handleFilterChange = (key: keyof TransactionFilters, value: string) => {
-    setFilters(prev => ({ ...prev, [key]: value }));
+    setFilters(prev => ({ 
+      ...prev, 
+      [key]: key === 'showImportantOnly' ? value === 'true' : value 
+    }));
   };
 
   const clearFilters = () => {
@@ -58,7 +64,8 @@ const TransactionsPage: React.FC<TransactionsPageProps> = ({
       dateFrom: '',
       dateTo: '',
       amountMin: '',
-      amountMax: ''
+      amountMax: '',
+      showImportantOnly: false
     });
   };
 
@@ -75,7 +82,8 @@ const TransactionsPage: React.FC<TransactionsPageProps> = ({
         fromAccountId: editForm.fromAccountId,
         toAccountId: editForm.toAccountId,
         date: editForm.date,
-        description: editForm.description
+        description: editForm.description,
+        isImportant: editForm.isImportant
       });
       setEditingId(null);
       setEditForm(null);
@@ -141,15 +149,24 @@ const TransactionsPage: React.FC<TransactionsPageProps> = ({
         
         {/* Compact Sort Controls - always visible */}
         <div className="compact-sort-controls">
-          <select value={sortBy} onChange={(e) => setSortBy(e.target.value as 'date' | 'amount' | 'title')}>
+          <select value={sortBy} onChange={(e) => setSortBy(e.target.value as 'date' | 'amount' | 'title' | 'important')}>
             <option value="date">📅 Date</option>
             <option value="amount">💰 Amount</option>
             <option value="title">📝 Title</option>
+            <option value="important">⭐ Important</option>
           </select>
           <select value={sortOrder} onChange={(e) => setSortOrder(e.target.value as 'asc' | 'desc')}>
             <option value="desc">⬇️ Desc</option>
             <option value="asc">⬆️ Asc</option>
           </select>
+          <label className="important-filter">
+            <input 
+              type="checkbox" 
+              checked={filters.showImportantOnly} 
+              onChange={(e) => handleFilterChange('showImportantOnly', e.target.checked.toString())}
+            />
+            <span>⭐ Important only</span>
+          </label>
         </div>
       </div>
 
@@ -257,6 +274,7 @@ const TransactionsPage: React.FC<TransactionsPageProps> = ({
             <table className="transactions-table">
               <thead>
                 <tr>
+                  <th>⭐</th>
                   <th>Date</th>
                   <th>Title</th>
                   <th>Type</th>
@@ -272,9 +290,24 @@ const TransactionsPage: React.FC<TransactionsPageProps> = ({
                   const transactionTypeInfo = getTransactionTypeDisplay(transaction);
                   
                   return (
-                    <tr key={transaction.id}>
+                    <tr key={transaction.id} data-important={transaction.isImportant || false}>
                       {editingId === transaction.id && editForm ? (
                         <>
+                          <td>
+                            <button
+                              type="button"
+                              onClick={() => setEditForm(prev => prev ? { ...prev, isImportant: !prev.isImportant } : null)}
+                              className="btn btn-star"
+                              style={{ 
+                                background: 'none', 
+                                border: 'none', 
+                                cursor: 'pointer',
+                                fontSize: '18px'
+                              }}
+                            >
+                              {editForm.isImportant ? '⭐' : '☆'}
+                            </button>
+                          </td>
                           <td>
                             <input
                               type="date"
@@ -346,6 +379,21 @@ const TransactionsPage: React.FC<TransactionsPageProps> = ({
                         </>
                       ) : (
                         <>
+                          <td>
+                            <button
+                              onClick={() => onToggleImportant(transaction.id)}
+                              className="btn btn-star"
+                              style={{ 
+                                background: 'none', 
+                                border: 'none', 
+                                cursor: 'pointer',
+                                fontSize: '18px'
+                              }}
+                              title={transaction.isImportant ? 'Remove from important' : 'Mark as important'}
+                            >
+                              {transaction.isImportant ? '⭐' : '☆'}
+                            </button>
+                          </td>
                           <td>{formatDate(transaction.date)}</td>
                           <td className="transaction-title">{transaction.title}</td>
                           <td>

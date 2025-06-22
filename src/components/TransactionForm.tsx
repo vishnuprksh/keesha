@@ -22,7 +22,8 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ accounts, onAddTransa
     fromAccountId: '',
     toAccountId: '',
     date: new Date().toISOString().split('T')[0],
-    description: ''
+    description: '',
+    isImportant: false
   };
 
   const {
@@ -58,7 +59,8 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ accounts, onAddTransa
         fromAccountId: formData.fromAccountId,
         toAccountId: formData.toAccountId,
         date: formData.date,
-        description: formData.description.trim()
+        description: formData.description.trim(),
+        isImportant: formData.isImportant
       });
 
       // Reset form only on successful submission
@@ -174,6 +176,18 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ accounts, onAddTransa
             rows={3}
             disabled={isSubmitting}
           />
+        </div>
+
+        <div className="form-group">
+          <label className="checkbox-label">
+            <input
+              type="checkbox"
+              checked={formData.isImportant}
+              onChange={(e) => setValue('isImportant', e.target.checked)}
+              disabled={isSubmitting}
+            />
+            <span>⭐ Mark as important</span>
+          </label>
         </div>
 
         {getTransactionPreview() && (

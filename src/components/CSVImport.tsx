@@ -11,6 +11,7 @@ interface CSVRow {
   toAccountId: string;
   date: string;
   description: string;
+  isImportant: string;
   isValid: boolean;
   errors: string[];
 }
@@ -37,6 +38,7 @@ const CSVImport: React.FC<CSVImportProps> = ({ accounts, onImportTransactions })
       toAccountId: validation.toAccountId || '',
       date: row.date || '',
       description: row.description || '',
+      isImportant: row.isImportant || 'false',
       isValid: validation.isValid,
       errors: validation.errors
     };
@@ -76,8 +78,13 @@ const CSVImport: React.FC<CSVImportProps> = ({ accounts, onImportTransactions })
       const updated = [...prev];
       updated[index] = { ...updated[index], [field]: value };
       
-      // Re-validate the row
-      const validatedRow = validateRow(updated[index]);
+      // Re-validate the row with the updated data structure
+      const rowForValidation = {
+        ...updated[index],
+        fromAccount: updated[index].fromAccountId,
+        toAccount: updated[index].toAccountId
+      };
+      const validatedRow = validateRow(rowForValidation);
       updated[index] = { ...updated[index], isValid: validatedRow.isValid, errors: validatedRow.errors };
       
       return updated;
@@ -106,7 +113,8 @@ const CSVImport: React.FC<CSVImportProps> = ({ accounts, onImportTransactions })
         fromAccountId: row.fromAccountId,
         toAccountId: row.toAccountId,
         date: row.date,
-        description: row.description?.trim() || ''
+        description: row.description?.trim() || '',
+        isImportant: row.isImportant === 'true'
       }));
 
       console.log(`CSV Import: Starting import of ${transactions.length} transactions`);
@@ -135,10 +143,10 @@ const CSVImport: React.FC<CSVImportProps> = ({ accounts, onImportTransactions })
     const expenseAccount = accounts.find(acc => acc.type === 'expense')?.name || 'Food & Dining';
     
     const template = [
-      ['title', 'amount', 'fromAccount', 'toAccount', 'date', 'description'],
-      ['Salary Payment', '3500.00', incomeAccount, bankAccount, '2025-06-01', 'Monthly salary'],
-      ['Grocery Shopping', '45.67', bankAccount, expenseAccount, '2025-06-01', 'Weekly groceries'],
-      ['Transfer to Savings', '500.00', bankAccount, 'Savings Account', '2025-06-02', 'Monthly savings transfer']
+      ['title', 'amount', 'fromAccount', 'toAccount', 'date', 'description', 'isImportant'],
+      ['Salary Payment', '3500.00', incomeAccount, bankAccount, '2025-06-01', 'Monthly salary', 'true'],
+      ['Grocery Shopping', '45.67', bankAccount, expenseAccount, '2025-06-01', 'Weekly groceries', 'false'],
+      ['Transfer to Savings', '500.00', bankAccount, 'Savings Account', '2025-06-02', 'Monthly savings transfer', 'false']
     ];
     
     const csvContent = template.map(row => row.join(',')).join('\n');

@@ -178,6 +178,21 @@ function App() {
     }
   };
 
+  const toggleImportant = async (id: string) => {
+    try {
+      const transaction = transactions.find(t => t.id === id);
+      if (transaction) {
+        await firebaseUpdateTransaction(id, {
+          ...transaction,
+          isImportant: !transaction.isImportant
+        });
+      }
+    } catch (error) {
+      console.error('Error toggling transaction importance:', error);
+      throw error;
+    }
+  };
+
   const addAccount = async (account: Omit<Account, 'id'>) => {
     try {
       await firebaseAddAccount(account);
@@ -397,6 +412,7 @@ function App() {
               accounts={accounts}
               onDeleteTransaction={deleteTransaction}
               onUpdateTransaction={updateTransaction}
+              onToggleImportant={toggleImportant}
             />
           )}
           

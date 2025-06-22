@@ -16,6 +16,7 @@ export interface Transaction {
   toAccountId: string;
   date: string;
   description?: string;
+  isImportant?: boolean;
 }
 
 // Keep Expense interface for backward compatibility during migration

@@ -2313,3 +2313,89 @@ body {
 .user-dropdown-item:hover {
   background: #f8f9fa;
 }
+
+/* Important transactions styles */
+.important-filter {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-left: 1rem;
+  font-size: 0.9rem;
+  color: #333;
+  cursor: pointer;
+}
+
+.important-filter input[type="checkbox"] {
+  margin: 0;
+}
+
+.btn-star {
+  padding: 0.25rem !important;
+  margin: 0 !important;
+  width: auto !important;
+  min-width: auto !important;
+  transition: all 0.2s ease;
+}
+
+.btn-star:hover {
+  transform: scale(1.2);
+}
+
+/* Highlight important transactions */
+.transactions-table tr td:first-child {
+  text-align: center;
+  width: 40px;
+}
+
+.transactions-table tr[data-important="true"] {
+  background-color: rgba(255, 235, 59, 0.1);
+  border-left: 3px solid #ffc107;
+}
+
+.transactions-table tr[data-important="true"]:hover {
+  background-color: rgba(255, 235, 59, 0.2);
+}
+
+/* Compact sort controls styling for important filter */
+.compact-sort-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.compact-sort-controls select {
+  padding: 0.4rem 0.8rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background: white;
+  font-size: 0.9rem;
+}
+
+.compact-sort-controls .important-filter {
+  margin-left: 0;
+  padding: 0.4rem 0.8rem;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 4px;
+  border: 1px solid #ddd;
+}
+
+/* Checkbox label styling */
+.checkbox-label {
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.5rem !important;
+  cursor: pointer !important;
+  font-weight: normal !important;
+  margin-bottom: 0 !important;
+}
+
+.checkbox-label input[type="checkbox"] {
+  margin: 0 !important;
+  width: auto !important;
+}
+
+.checkbox-label span {
+  user-select: none;
+}

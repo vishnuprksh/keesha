@@ -100,17 +100,19 @@ export const validateCSVTransaction = (row: any, accounts: Account[]): CSVValida
     isValid = false;
   }
 
-  // Validate fromAccount
-  const fromAccount = accounts.find(acc => acc.name === row.fromAccount || acc.id === row.fromAccount);
-  if (!fromAccount) {
-    errors.push(`From account "${row.fromAccount}" not found`);
+  // Validate fromAccount - check both original CSV field and updated field
+  const fromAccountIdentifier = row.fromAccountId || row.fromAccount;
+  const fromAccount = accounts.find(acc => acc.name === fromAccountIdentifier || acc.id === fromAccountIdentifier);
+  if (!fromAccountIdentifier || !fromAccount) {
+    errors.push(`From account "${fromAccountIdentifier || 'undefined'}" not found`);
     isValid = false;
   }
 
-  // Validate toAccount
-  const toAccount = accounts.find(acc => acc.name === row.toAccount || acc.id === row.toAccount);
-  if (!toAccount) {
-    errors.push(`To account "${row.toAccount}" not found`);
+  // Validate toAccount - check both original CSV field and updated field
+  const toAccountIdentifier = row.toAccountId || row.toAccount;
+  const toAccount = accounts.find(acc => acc.name === toAccountIdentifier || acc.id === toAccountIdentifier);
+  if (!toAccountIdentifier || !toAccount) {
+    errors.push(`To account "${toAccountIdentifier || 'undefined'}" not found`);
     isValid = false;
   }
 
