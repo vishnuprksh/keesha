@@ -30,16 +30,19 @@ const AppLayout: React.FC<AppLayoutProps> = ({
       <header className="app-header">
         <div style={{ 
           display: 'flex', 
-          justifyContent: 'space-between', 
+          justifyContent: 'center', 
           alignItems: 'center', 
-          width: '100%' 
+          width: '100%',
+          position: 'relative'
         }}>
-          <div>
+          <div style={{ textAlign: 'center' }}>
             <h1>💰 Keesha</h1>
             <p>Your Personal Expense Tracker</p>
           </div>
           {user && onSignOut && (
-            <UserHeader user={user} onSignOut={onSignOut} />
+            <div style={{ position: 'absolute', right: 0 }}>
+              <UserHeader user={user} onSignOut={onSignOut} />
+            </div>
           )}
         </div>
       </header>

@@ -268,8 +268,10 @@ function App() {
     return (
       <div className="app">
         <header className="app-header">
-          <h1>💰 Keesha</h1>
-          <p>Your Personal Expense Tracker</p>
+          <div style={{ textAlign: 'center' }}>
+            <h1>💰 Keesha</h1>
+            <p>Your Personal Expense Tracker</p>
+          </div>
         </header>
         <main className="app-main">
           <FirebaseSetup onSetupComplete={() => window.location.reload()} />
@@ -296,8 +298,10 @@ function App() {
     return (
       <div className="app">
         <header className="app-header">
-          <h1>💰 Keesha</h1>
-          <p>Your Personal Expense Tracker</p>
+          <div style={{ textAlign: 'center' }}>
+            <h1>💰 Keesha</h1>
+            <p>Your Personal Expense Tracker</p>
+          </div>
         </header>
         <main className="app-main">
           <div className="container">
@@ -322,8 +326,10 @@ function App() {
     return (
       <div className="app">
         <header className="app-header">
-          <h1>💰 Keesha</h1>
-          <p>Your Personal Expense Tracker</p>
+          <div style={{ textAlign: 'center' }}>
+            <h1>💰 Keesha</h1>
+            <p>Your Personal Expense Tracker</p>
+          </div>
         </header>
         <main className="app-main">
           <div className="container">
@@ -343,12 +349,22 @@ function App() {
   return (
     <div className="app">
       <header className="app-header">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-          <div>
+        <div style={{ 
+          display: 'flex', 
+          justifyContent: 'center', 
+          alignItems: 'center', 
+          width: '100%',
+          position: 'relative'
+        }}>
+          <div style={{ textAlign: 'center' }}>
             <h1>💰 Keesha</h1>
             <p>Your Personal Expense Tracker</p>
           </div>
-          {user && <UserHeader user={user} onSignOut={signOut} />}
+          {user && (
+            <div style={{ position: 'absolute', right: 0 }}>
+              <UserHeader user={user} onSignOut={signOut} />
+            </div>
+          )}
         </div>
       </header>
 
