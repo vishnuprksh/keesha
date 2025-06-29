@@ -28,7 +28,7 @@ This project is configured for automatic deployment to Firebase Hosting using Gi
 ### Setup Instructions
 
 1. **Firebase Project Setup**
-   - Project ID: `ai-wallet-427217`
+   - Project ID: `keesha-10560`
    - Hosting configured to deploy from the `build` folder
 
 2. **GitHub Actions Workflows**

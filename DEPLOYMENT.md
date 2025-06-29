@@ -1,7 +1,7 @@
 # Firebase Hosting Deployment Checklist
 
 ## Pre-deployment Setup
-- [ ] Firebase project created and configured (`ai-wallet-427217`)
+- [ ] Firebase project created and configured (`keesha-10560`)
 - [ ] Firebase CLI installed (`npm install -g firebase-tools`)
 - [ ] Logged into Firebase (`firebase login`)
 - [ ] GitHub repository created and connected
@@ -40,7 +40,7 @@ firebase hosting:channel:list  # List all hosting channels
 
 # GitHub Actions setup
 firebase init hosting:github   # Initialize GitHub integration
-firebase use ai-wallet-427217  # Switch to project (if needed)
+firebase use keesha-10560      # Switch to project (if needed)
 ```
 
 ## Troubleshooting
