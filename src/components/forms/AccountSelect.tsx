@@ -34,6 +34,9 @@ const AccountSelect: React.FC<AccountSelectProps> = ({
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  
+  // Generate unique IDs for ARIA attributes
+  const listboxId = `account-listbox-${name || 'default'}`;
 
   const filteredAccounts = accounts.filter(account => {
     if (filterType && account.type !== filterType) return false;
@@ -166,6 +169,7 @@ const AccountSelect: React.FC<AccountSelectProps> = ({
           tabIndex={disabled ? -1 : 0}
           role="combobox"
           aria-expanded={isOpen}
+          aria-controls={listboxId}
           aria-haspopup="listbox"
           aria-label={label || placeholder}
           style={{
@@ -206,6 +210,8 @@ const AccountSelect: React.FC<AccountSelectProps> = ({
 
         {isOpen && (
           <div
+            id={listboxId}
+            role="listbox"
             className="dropdown-menu"
             style={{
               position: 'absolute',
