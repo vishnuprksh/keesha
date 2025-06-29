@@ -27,23 +27,6 @@ else
     echo "❌ firebase.json not found"
 fi
 
-# Check GitHub Actions workflows
-echo ""
-echo "⚙️  GitHub Actions Workflows:"
-if [ -f ".github/workflows/firebase-hosting-merge.yml" ]; then
-    echo "✅ Merge workflow exists"
-    project_id=$(grep "projectId:" .github/workflows/firebase-hosting-merge.yml | awk '{print $2}')
-    echo "   Target project: $project_id"
-else
-    echo "❌ Merge workflow not found"
-fi
-
-if [ -f ".github/workflows/firebase-hosting-pull-request.yml" ]; then
-    echo "✅ PR workflow exists"
-else
-    echo "❌ PR workflow not found"
-fi
-
 # Check package.json build script
 echo ""
 echo "📦 Build Configuration:"
@@ -68,16 +51,10 @@ else
 fi
 
 echo ""
-echo "🔐 Required GitHub Secrets:"
-echo "   FIREBASE_SERVICE_ACCOUNT_KEESHA_10560"
-echo "   (This must be set manually in GitHub repository settings)"
-
-echo ""
-echo "📋 Next Steps:"
-echo "1. Ensure the GitHub secret is set up"
-echo "2. Push changes to trigger deployment"
-echo "3. Check GitHub Actions tab for deployment status"
-echo "4. Visit https://keesha-10560.web.app to see your deployed app"
+echo "� Next Steps:"
+echo "1. Run 'npm run build' to build the application"
+echo "2. Run 'npm run deploy' to deploy to Firebase hosting"
+echo "3. Visit https://keesha-10560.web.app to see your deployed app"
 
 echo ""
 echo "🚀 Ready to deploy!"

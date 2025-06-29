@@ -21,9 +21,9 @@ Keesha now supports Firebase for real-time data synchronization across devices. 
 
 📖 **Detailed setup instructions:** See [FIREBASE_SETUP.md](./FIREBASE_SETUP.md)
 
-## Firebase Hosting & GitHub Integration
+## Firebase Hosting
 
-This project is configured for automatic deployment to Firebase Hosting using GitHub Actions.
+This project supports deployment to Firebase Hosting for production use.
 
 ### Setup Instructions
 
@@ -31,20 +31,8 @@ This project is configured for automatic deployment to Firebase Hosting using Gi
    - Project ID: `keesha-10560`
    - Hosting configured to deploy from the `build` folder
 
-2. **GitHub Actions Workflows**
-   - **Merge Deploy**: Automatically deploys to production when code is pushed to `main` or `master` branch
-   - **Preview Deploy**: Creates preview deployments for pull requests
-
-3. **Required GitHub Secrets**
-   To enable automatic deployment, you need to add the following secret to your GitHub repository:
-   
-   - `FIREBASE_SERVICE_ACCOUNT_AI_WALLET_427217`: Firebase service account key
-   
-   **To generate the service account key:**
-   ```bash
-   firebase login
-   firebase init hosting:github
-   ```
+2. **Manual Deployment**
+   Deploy your application manually using Firebase CLI commands
 
 ### Available Scripts
 
