@@ -179,8 +179,10 @@ const AccountSelect: React.FC<AccountSelectProps> = ({
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
-            minHeight: '50px',
-            outline: 'none'
+            minHeight: '48px',
+            height: '48px',
+            outline: 'none',
+            boxSizing: 'border-box'
           }}
         >
           <span style={{ 

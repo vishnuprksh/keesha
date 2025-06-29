@@ -24,6 +24,17 @@
   position: sticky;
   top: 0;
   font-size: 16px;
+  vertical-align: middle;
+  height: 60px;
+  min-height: 60px;
+}
+
+.csv-table th.drag-header {
+  width: 40px;
+  min-width: 40px;
+  max-width: 40px;
+  text-align: center;
+  padding: 1rem 0.5rem;
 }
 
 .csv-table td {
@@ -31,14 +42,20 @@
   border-bottom: 1px solid #dee2e6;
   vertical-align: middle;
   font-size: 15px;
+  height: auto;
+  min-height: 60px;
 }
 
 .csv-table tr.valid-row {
   background: #f8fff8;
+  height: 80px;
+  min-height: 80px;
 }
 
 .csv-table tr.invalid-row {
   background: #fff5f5;
+  height: 80px;
+  min-height: 80px;
 }
 
 .csv-table input,
@@ -49,7 +66,10 @@
   border-radius: 6px;
   font-size: 15px;
   min-height: 48px;
+  height: 48px;
   box-sizing: border-box;
+  line-height: 1.2;
+  vertical-align: middle;
 }
 
 .csv-table input.error,
@@ -101,6 +121,33 @@
   padding: 0.25rem;
   border-radius: 4px;
   transition: background 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  vertical-align: middle;
+}
+
+.insert-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.2rem;
+  padding: 0.25rem;
+  border-radius: 4px;
+  transition: background 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  vertical-align: middle;
+  color: #28a745;
+}
+
+.insert-btn:hover {
+  background: #f0fff0;
 }
 
 .remove-btn:hover {
@@ -122,12 +169,112 @@
   max-width: 50px;
   text-align: center;
   padding: 0.75rem 0.5rem;
+  vertical-align: middle;
+}
+
+.csv-table .select-column input[type="checkbox"] {
+  margin: 0;
+  transform: scale(1.1);
+  cursor: pointer;
+  vertical-align: middle;
+}
+
+.csv-table .select-header input[type="checkbox"] {
+  margin: 0;
+  transform: scale(1.2);
+  cursor: pointer;
+  vertical-align: middle;
 }
 
 .csv-table .drag-handle {
   width: 40px;
   min-width: 40px;
   max-width: 40px;
+  vertical-align: middle;
+  text-align: center;
+  padding: 1rem 0.5rem;
+}
+
+.csv-table .drag-icon {
+  color: #999;
+  cursor: grab;
+  font-size: 16px;
+  line-height: 1;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.csv-table .drag-handle:active .drag-icon {
+  cursor: grabbing;
+}
+
+/* Account Select alignment within table cells */
+.csv-table td .searchable-select {
+  margin: 0;
+  width: 100%;
+}
+
+.csv-table td .form-group {
+  margin-bottom: 0;
+  width: 100%;
+}
+
+.csv-table td .select-input {
+  align-items: center !important;
+  justify-content: space-between !important;
+  height: 48px !important;
+  min-height: 48px !important;
+  display: flex !important;
+}
+
+/* Ensure all input elements have consistent height and alignment */
+.csv-table td input,
+.csv-table td .select-input {
+  height: 48px;
+  min-height: 48px;
+  line-height: 1.2;
+  display: flex;
+  align-items: center;
+  vertical-align: middle;
+}
+
+/* Action buttons column alignment */
+.csv-table .actions-column {
+  text-align: center;
+  vertical-align: middle;
+  width: 100px;
+  min-width: 100px;
+}
+
+.csv-table .action-buttons {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Balance column alignment */
+.csv-table .balance-column {
+  vertical-align: middle;
+  text-align: left;
+  min-width: 150px;
+}
+
+.csv-table .balance-display {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  align-items: flex-start;
+  justify-content: center;
+  min-height: 48px;
+}
+
+/* Status column alignment */
+.csv-table .status {
+  text-align: center;
+  vertical-align: middle;
+  width: 100px;
+  min-width: 100px;
 }
 
 @media (max-width: 768px) {
