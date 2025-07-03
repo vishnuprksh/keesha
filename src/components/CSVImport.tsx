@@ -129,24 +129,61 @@ const CSVImport: React.FC<CSVImportProps> = ({ accounts, onImportTransactions, u
     });
   };
 
-  const insertRow = (index: number) => {
-    const newRow: CSVRow = {
-      id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
-      title: '',
-      amount: '',
-      fromAccountId: '',
-      toAccountId: '',
-      date: new Date().toISOString().split('T')[0], // Today's date
-      description: '',
-      isImportant: 'false',
-      isValid: false,
-      errors: ['Title is required', 'Amount must be a positive number', 'From account is required', 'To account is required'],
-      selected: false
-    };
+  const insertRow = (index: number, rowToCopy?: CSVRow) => {
+    let newRow: CSVRow;
+    
+    if (rowToCopy) {
+      // Copy the provided row
+      newRow = {
+        id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+        title: rowToCopy.title,
+        amount: rowToCopy.amount,
+        fromAccountId: rowToCopy.fromAccountId,
+        toAccountId: rowToCopy.toAccountId,
+        date: rowToCopy.date,
+        description: rowToCopy.description,
+        isImportant: rowToCopy.isImportant,
+        isValid: rowToCopy.isValid,
+        errors: rowToCopy.errors,
+        selected: false // New copied row starts unselected
+      };
+    } else if (index >= 0 && index < csvData.length) {
+      // Copy the row at the specified index
+      const sourceRow = csvData[index];
+      newRow = {
+        id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+        title: sourceRow.title,
+        amount: sourceRow.amount,
+        fromAccountId: sourceRow.fromAccountId,
+        toAccountId: sourceRow.toAccountId,
+        date: sourceRow.date,
+        description: sourceRow.description,
+        isImportant: sourceRow.isImportant,
+        isValid: sourceRow.isValid,
+        errors: sourceRow.errors,
+        selected: false // New copied row starts unselected
+      };
+    } else {
+      // Create a blank row (for "Add New Transaction" button when no data exists)
+      newRow = {
+        id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+        title: '',
+        amount: '',
+        fromAccountId: '',
+        toAccountId: '',
+        date: new Date().toISOString().split('T')[0], // Today's date
+        description: '',
+        isImportant: 'false',
+        isValid: false,
+        errors: ['Title is required', 'Amount must be a positive number', 'From account is required', 'To account is required'],
+        selected: false
+      };
+    }
 
     setCsvData(prev => {
       const newData = [...prev];
-      newData.splice(index, 0, newRow);
+      const insertIndex = rowToCopy ? index + 1 : Math.max(0, index);
+      newData.splice(insertIndex, 0, newRow);
       return newData;
     });
   };

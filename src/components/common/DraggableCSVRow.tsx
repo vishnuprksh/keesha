@@ -12,7 +12,7 @@ interface DraggableCSVRowProps {
   onUpdateRow: (index: number, field: keyof CSVRow, value: string) => void;
   onRemoveRow: (index: number) => void;
   onReorderRows: (fromIndex: number, toIndex: number) => void;
-  onInsertRow: (index: number) => void;
+  onInsertRow: (index: number, rowToCopy?: CSVRow) => void;
   onToggleSelection: (index: number) => void;
   draggedIndex: number | null;
   onDragStart: (index: number) => void;
@@ -226,9 +226,9 @@ const DraggableCSVRow: React.FC<DraggableCSVRowProps> = ({
         <td className="actions-column">
           <div className="action-buttons">
             <button
-              onClick={() => onInsertRow(index)}
+              onClick={() => onInsertRow(index, row)}
               className="insert-btn"
-              title="Insert new transaction above"
+              title="Copy this transaction below"
             >
               ➕
             </button>
