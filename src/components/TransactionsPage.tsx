@@ -3,6 +3,7 @@ import { Transaction, Account, getTransactionType } from '../types';
 import { formatAmount, formatDate } from '../utils/formatters';
 import { filterTransactions, sortTransactions, TransactionFilters } from '../services/filterService';
 import { exportTransactionsToCSV, generateCSVFilename } from '../utils/csvExport';
+import { calculateRunningBalances } from '../utils/balanceCalculator';
 import EmptyState from './common/EmptyState';
 import AccountSelect from './forms/AccountSelect';
 import ConfirmDialog from './common/ConfirmDialog';
@@ -132,6 +133,24 @@ const TransactionsPage: React.FC<TransactionsPageProps> = ({
     exportTransactionsToCSV(filteredTransactions, accounts, filename);
   };
 
+  // Calculate running balances for transactions
+  const transactionsWithBalances = useMemo(() => {
+    return calculateRunningBalances(filteredTransactions, accounts);
+  }, [filteredTransactions, accounts]);
+
+  // Helper function to get account balance after a specific transaction
+  const getAccountBalanceAfterTransaction = (transactionId: string, accountId: string): number | null => {
+    const transactionWithBalance = transactionsWithBalances.find(twb => 
+      (twb.transaction as Transaction).id === transactionId
+    );
+    
+    if (transactionWithBalance && transactionWithBalance.runningBalances[accountId] !== undefined) {
+      return transactionWithBalance.runningBalances[accountId];
+    }
+    
+    return null;
+  };
+
   return (
     <div className="transactions-page">
       {/* Modern Header Section */}
@@ -142,7 +161,7 @@ const TransactionsPage: React.FC<TransactionsPageProps> = ({
         </div>
         <div className="header-stats">
           <div className="stat-item">
-            <span className="stat-label">Total</span>
+            <span className="stat-label">Total Transactions</span>
             <span className="stat-value">{filteredTransactions.length}</span>
           </div>
           <div className="stat-item">
@@ -323,6 +342,7 @@ const TransactionsPage: React.FC<TransactionsPageProps> = ({
                     <th className="col-from">From</th>
                     <th className="col-to">To</th>
                     <th className="col-amount">Amount</th>
+                    <th className="col-balance">Account Balances</th>
                     <th className="col-description">Description</th>
                     <th className="col-actions">Actions</th>
                   </tr>
@@ -397,6 +417,11 @@ const TransactionsPage: React.FC<TransactionsPageProps> = ({
                                 className="input-sm"
                               />
                             </td>
+                            <td className="balance-cell">
+                              <div className="balance-preview">
+                                <small>Balance updated after save</small>
+                              </div>
+                            </td>
                             <td>
                               <input
                                 type="text"
@@ -441,6 +466,30 @@ const TransactionsPage: React.FC<TransactionsPageProps> = ({
                               <span className={`amount ${getTransactionType(transaction, accounts)}`}>
                                 {formatAmount(transaction.amount)}
                               </span>
+                            </td>
+                            <td className="balance-cell">
+                              <div className="account-balances">
+                                {(() => {
+                                  const fromBalance = getAccountBalanceAfterTransaction(transaction.id, transaction.fromAccountId);
+                                  const toBalance = getAccountBalanceAfterTransaction(transaction.id, transaction.toAccountId);
+                                  return (
+                                    <>
+                                      {fromBalance !== null && (
+                                        <div className="balance-item">
+                                          <span className="account-name-small">{getAccountName(transaction.fromAccountId)}</span>
+                                          <span className="balance-amount">{formatAmount(fromBalance)}</span>
+                                        </div>
+                                      )}
+                                      {toBalance !== null && transaction.fromAccountId !== transaction.toAccountId && (
+                                        <div className="balance-item">
+                                          <span className="account-name-small">{getAccountName(transaction.toAccountId)}</span>
+                                          <span className="balance-amount">{formatAmount(toBalance)}</span>
+                                        </div>
+                                      )}
+                                    </>
+                                  );
+                                })()}
+                              </div>
                             </td>
                             <td className="description-cell">{transaction.description || '—'}</td>
                             <td>

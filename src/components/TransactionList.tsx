@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Transaction, Account, getTransactionType } from '../types';
 import { formatAmount, formatDate } from '../utils/formatters';
+import { calculateRunningBalances } from '../utils/balanceCalculator';
 import EmptyState from './common/EmptyState';
 import AccountSelect from './forms/AccountSelect';
 import ConfirmDialog from './common/ConfirmDialog';
@@ -73,6 +74,24 @@ const TransactionList: React.FC<TransactionListProps> = ({
   const handleCancel = () => {
     setEditingId(null);
     setEditForm(null);
+  };
+
+  // Calculate running balances for transactions
+  const transactionsWithBalances = useMemo(() => {
+    return calculateRunningBalances(transactions, accounts);
+  }, [transactions, accounts]);
+
+  // Helper function to get account balance after a specific transaction
+  const getAccountBalanceAfterTransaction = (transactionId: string, accountId: string): number | null => {
+    const transactionWithBalance = transactionsWithBalances.find(twb => 
+      (twb.transaction as Transaction).id === transactionId
+    );
+    
+    if (transactionWithBalance && transactionWithBalance.runningBalances[accountId] !== undefined) {
+      return transactionWithBalance.runningBalances[accountId];
+    }
+    
+    return null;
   };
 
   const handleDeleteTransaction = (transaction: Transaction) => {
@@ -276,6 +295,28 @@ const TransactionList: React.FC<TransactionListProps> = ({
                       {transaction.description && (
                         <p className="description">{transaction.description}</p>
                       )}
+                      <div className="account-balances">
+                        {(() => {
+                          const fromBalance = getAccountBalanceAfterTransaction(transaction.id, transaction.fromAccountId);
+                          const toBalance = getAccountBalanceAfterTransaction(transaction.id, transaction.toAccountId);
+                          return (
+                            <div className="balance-display">
+                              {fromBalance !== null && (
+                                <div className="balance-item">
+                                  <span className="balance-label">{getAccountName(transaction.fromAccountId)}:</span>
+                                  <span className="balance-value">{formatAmount(fromBalance)}</span>
+                                </div>
+                              )}
+                              {toBalance !== null && transaction.fromAccountId !== transaction.toAccountId && (
+                                <div className="balance-item">
+                                  <span className="balance-label">{getAccountName(transaction.toAccountId)}:</span>
+                                  <span className="balance-value">{formatAmount(toBalance)}</span>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })()}
+                      </div>
                     </div>
                   </div>
                 </>

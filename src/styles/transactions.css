@@ -227,6 +227,7 @@
 .transactions-table th.col-from,
 .transactions-table th.col-to { width: 150px; }
 .transactions-table th.col-amount { width: 120px; text-align: right; }
+.transactions-table th.col-balance { width: 180px; text-align: right; }
 .transactions-table th.col-description { width: 200px; }
 .transactions-table th.col-actions { width: 120px; text-align: center; }
 
@@ -443,4 +444,51 @@
 
 .transaction-item.transfer {
   border-left-color: #007bff;
+}
+
+/* Balance Column Styles */
+.balance-cell {
+  text-align: right;
+  font-size: 0.9rem;
+}
+
+.account-balances {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid #e9ecef;
+}
+
+.balance-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0.5rem;
+  background: rgba(102, 126, 234, 0.08);
+  border-radius: 6px;
+  border-left: 3px solid #667eea;
+  font-size: 0.85rem;
+}
+
+.balance-label {
+  color: #6c757d;
+  font-weight: 500;
+}
+
+.balance-value {
+  color: #495057;
+  font-weight: 600;
+}
+
+.balance-preview {
+  text-align: center;
+  color: #6c757d;
+  font-style: italic;
+  padding: 0.5rem 0;
+}
+
+.balance-preview small {
+  font-size: 0.75rem;
 }
