@@ -18,7 +18,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({
   children
 }) => {
   const tabs = [
-    { id: 'import', label: '📄 CSV Import' },
+    { id: 'home', label: '🏠 Home' },
     { id: 'dashboard', label: '📊 Dashboard' },
     { id: 'transactions', label: '💰 Transactions' },
     { id: 'accounts', label: '🏦 Accounts' },

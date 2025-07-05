@@ -6,7 +6,7 @@ import TransactionList from './components/TransactionList';
 import TransactionSummary from './components/TransactionSummary';
 import TransactionsPage from './components/TransactionsPage';
 import AccountManager from './components/AccountManager';
-import CSVImport from './components/CSVImport';
+import HomePage from './components/HomePage';
 import StatsPage from './components/StatsPage';
 import FirebaseSetup from './components/FirebaseSetup';
 import LoginPage from './components/LoginPage';
@@ -16,7 +16,7 @@ import { useAuth } from './useAuth';
 import { migrationService } from './firebaseService';
 
 function App() {
-  const [activeTab, setActiveTab] = useState<'import' | 'dashboard' | 'transactions' | 'accounts' | 'stats'>('import');
+  const [activeTab, setActiveTab] = useState<'home' | 'dashboard' | 'transactions' | 'accounts' | 'stats'>('home');
   const [isMigrating, setIsMigrating] = useState(false);
   
   // Authentication
@@ -372,10 +372,10 @@ function App() {
         <div className="nav-container">
           <div className="nav-tabs">
             <button
-              className={`nav-tab ${activeTab === 'import' ? 'active' : ''}`}
-              onClick={() => setActiveTab('import')}
+              className={`nav-tab ${activeTab === 'home' ? 'active' : ''}`}
+              onClick={() => setActiveTab('home')}
             >
-              📄 CSV Import
+              🏠 Home
             </button>
             <button
               className={`nav-tab ${activeTab === 'dashboard' ? 'active' : ''}`}
@@ -400,12 +400,6 @@ function App() {
               onClick={() => setActiveTab('stats')}
             >
               📊 Stats
-            </button>
-            <button
-              className={`nav-tab ${activeTab === 'import' ? 'active' : ''}`}
-              onClick={() => setActiveTab('import')}
-            >
-              📄 CSV Import
             </button>
           </div>
         </div>
@@ -454,8 +448,8 @@ function App() {
             />
           )}
           
-          {activeTab === 'import' && (
-            <CSVImport accounts={accounts} onImportTransactions={importTransactions} userId={user?.uid || null} />
+          {activeTab === 'home' && (
+            <HomePage accounts={accounts} onImportTransactions={importTransactions} userId={user?.uid || null} />
           )}
         </div>
       </main>

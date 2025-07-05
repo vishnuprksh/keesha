@@ -3,7 +3,7 @@ import './App.css';
 import { Transaction, Account } from './types';
 import TransactionsPage from './components/TransactionsPage';
 import AccountManager from './components/AccountManager';
-import CSVImport from './components/CSVImport';
+import HomePage from './components/HomePage';
 import StatsPage from './components/StatsPage';
 import FirebaseSetup from './components/FirebaseSetup';
 import LoginPage from './components/LoginPage';
@@ -16,7 +16,7 @@ import { useAuth } from './useAuth';
 import { isAccountUsedInTransactions } from './utils/validation';
 
 function App() {
-  const [activeTab, setActiveTab] = useState<'import' | 'dashboard' | 'transactions' | 'accounts'>('import');
+  const [activeTab, setActiveTab] = useState<'home' | 'dashboard' | 'transactions' | 'accounts'>('home');
   
   // Authentication
   const { user, loading: authLoading, error: authError, signInWithGoogle, signOut, clearError: clearAuthError } = useAuth();
@@ -369,10 +369,10 @@ function App() {
         <div className="nav-container">
           <div className="nav-tabs">
             <button
-              className={`nav-tab ${activeTab === 'import' ? 'active' : ''}`}
-              onClick={() => setActiveTab('import')}
+              className={`nav-tab ${activeTab === 'home' ? 'active' : ''}`}
+              onClick={() => setActiveTab('home')}
             >
-              📄 CSV Import
+              🏠 Home
             </button>
             <button
               className={`nav-tab ${activeTab === 'dashboard' ? 'active' : ''}`}
@@ -396,10 +396,10 @@ function App() {
         </div>
       </nav>
 
-      <main className={`app-main ${activeTab === 'import' ? 'csv-import-mode' : ''}`}>
-        {activeTab === 'import' ? (
-          // CSV Import gets full width without container constraints
-          <CSVImport accounts={accounts} onImportTransactions={importTransactions} userId={user?.uid || null} />
+      <main className={`app-main ${activeTab === 'home' ? 'home-mode' : ''}`}>
+        {activeTab === 'home' ? (
+          // Home page gets full width without container constraints
+          <HomePage accounts={accounts} onImportTransactions={importTransactions} userId={user?.uid || null} />
         ) : (
           <div className="container">
             {activeTab === 'dashboard' && (

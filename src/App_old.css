@@ -59,7 +59,7 @@ body {
 }
 
 /* Fallback for browsers that don't support :has() */
-.app-main.csv-import-mode {
+.app-main.home-mode {
   padding: 2rem 0;
 }
 
