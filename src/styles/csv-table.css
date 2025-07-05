@@ -1,4 +1,8 @@
-/* CSV Table styles */
+/* CSV Tab.csv-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 2050px;
+}yles */
 .csv-table-container {
   overflow-x: auto;
   border: 1px solid #ddd;
@@ -11,7 +15,7 @@
 .csv-table {
   width: 100%;
   border-collapse: collapse;
-  min-width: 1800px;
+  min-width: 1850px;
 }
 
 .csv-table th {
@@ -273,8 +277,8 @@
 .csv-table .status {
   text-align: center;
   vertical-align: middle;
-  width: 100px;
-  min-width: 100px;
+  width: 200px;
+  min-width: 200px;
 }
 
 @media (max-width: 768px) {

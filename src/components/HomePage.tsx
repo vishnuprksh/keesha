@@ -1,4 +1,4 @@
-import React, { useState, useRef, useMemo } from 'react';
+import React, { useState, useRef, useMemo, useEffect } from 'react';
 import * as Papa from 'papaparse';
 import { Transaction, Account, CSVRow } from '../types';
 import { validateCSVTransaction } from '../utils/validation';
@@ -28,6 +28,72 @@ const HomePage: React.FC<HomePageProps> = ({ accounts, onImportTransactions, use
     if (csvData.length === 0) return [];
     return calculateRunningBalances(csvData, accounts, true);
   }, [csvData, accounts]);
+
+  // Helper function to re-validate existing CSV data
+  const revalidateCSVData = (data: CSVRow[]): CSVRow[] => {
+    return data.map(row => {
+      // Create a validation object with both current data and legacy format
+      const rowForValidation = {
+        ...row,
+        fromAccount: row.fromAccountId,
+        toAccount: row.toAccountId
+      };
+      
+      const validation = validateCSVTransaction(rowForValidation, accounts);
+      
+      return {
+        ...row,
+        fromAccountId: validation.fromAccountId || row.fromAccountId,
+        toAccountId: validation.toAccountId || row.toAccountId,
+        isValid: validation.isValid,
+        errors: validation.errors,
+        // Preserve selection only if the row is still valid
+        selected: row.selected && validation.isValid
+      };
+    });
+  };
+
+  // Re-validate CSV data when accounts change
+  useEffect(() => {
+    if (csvData.length > 0 && accounts.length > 0) {
+      const revalidated = revalidateCSVData(csvData);
+      // Only update if validation results have actually changed
+      const hasChanges = revalidated.some((newRow, index) => {
+        const oldRow = csvData[index];
+        return oldRow && (
+          newRow.isValid !== oldRow.isValid ||
+          newRow.errors.length !== oldRow.errors.length ||
+          newRow.fromAccountId !== oldRow.fromAccountId ||
+          newRow.toAccountId !== oldRow.toAccountId
+        );
+      });
+      
+      if (hasChanges) {
+        setCsvData(revalidated);
+      }
+    }
+  }, [accounts]);
+
+  // Always ensure at least one empty row exists when no data or file is present
+  useEffect(() => {
+    // Only initialize empty row if we have no CSV data, no selected file, and no persisted data
+    if (csvData.length === 0 && !selectedFile && !hasPersistedData && accounts.length > 0) {
+      const emptyRow: CSVRow = {
+        id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+        title: '',
+        amount: '',
+        fromAccountId: '',
+        toAccountId: '',
+        date: new Date().toISOString().split('T')[0], // Today's date
+        description: '',
+        isImportant: 'false',
+        isValid: false,
+        errors: ['Title is required', 'Amount must be a positive number', 'From account is required', 'To account is required'],
+        selected: false
+      };
+      setCsvData([emptyRow]);
+    }
+  }, [accounts, selectedFile, hasPersistedData]);
 
   const validateRow = (row: any): CSVRow => {
     const validation = validateCSVTransaction(row, accounts);
@@ -65,7 +131,8 @@ const HomePage: React.FC<HomePageProps> = ({ accounts, onImportTransactions, use
       skipEmptyLines: true,
       complete: (results) => {
         const validatedData = results.data.map((row: any) => validateRow(row));
-        setCsvData(validatedData);
+        // Append to existing data instead of replacing
+        setCsvData(prev => [...prev, ...validatedData]);
         setIsImporting(false);
       },
       error: (error) => {
@@ -353,10 +420,16 @@ const HomePage: React.FC<HomePageProps> = ({ accounts, onImportTransactions, use
     try {
       const session = await getImportSession(sessionId);
       if (session) {
-        setCsvData(session.csvData);
+        // Re-validate all CSV rows against current accounts to ensure they're up-to-date
+        const revalidatedData = revalidateCSVData(session.csvData);
+        
+        setCsvData(revalidatedData);
         setCurrentImportSessionId(sessionId);
         setSelectedFile(new File([], session.fileName, { type: 'text/csv' }));
-        alert(`Loaded import session: ${session.name}`);
+        
+        const validCount = revalidatedData.filter(row => row.isValid).length;
+        const totalCount = revalidatedData.length;
+        alert(`Loaded import session: ${session.name}\n${validCount}/${totalCount} rows are valid after re-validation.`);
       }
     } catch (error) {
       console.error('Error loading session:', error);
@@ -383,7 +456,7 @@ const HomePage: React.FC<HomePageProps> = ({ accounts, onImportTransactions, use
     <div className="csv-import">
       <div className="csv-import-header">
         <h2>🏠 Welcome to Keesha</h2>
-        <p>Your personal expense tracker - Upload a CSV file to import multiple transactions at once, or start by managing your accounts and adding individual transactions.</p>
+        <p>Your personal expense tracker - Add transactions manually below or import from a CSV file. CSV imports will be added to your existing transactions.</p>
         {hasPersistedData && (
           <div className="auto-save-notice">
             <span className="auto-save-icon">💾</span>
@@ -476,46 +549,47 @@ const HomePage: React.FC<HomePageProps> = ({ accounts, onImportTransactions, use
         {isImporting && <p className="loading">Parsing CSV file...</p>}
       </div>
 
-      {csvData.length > 0 && (
-        <div className="csv-data-section">
-          <div className="data-header">
-            <h3>Preview & Edit Data ({csvData.length} rows)</h3>
-            <div className="data-header-right">
-              {isSaving && (
-                <span className="auto-save-indicator">
-                  <span className="saving-dot"></span>
-                  Auto-saving...
-                </span>
-              )}
-              <div className="import-actions">
-                <div className="selection-controls">
+      {/* Always show the transaction table */}
+      <div className="csv-data-section">
+        <div className="data-header">
+          <h3>Transaction Data ({csvData.length} rows)</h3>
+          <div className="data-header-right">
+            {isSaving && (
+              <span className="auto-save-indicator">
+                <span className="saving-dot"></span>
+                Auto-saving...
+              </span>
+            )}
+            <div className="import-actions">
+              <div className="selection-controls">
+                <button 
+                  onClick={selectAllValid}
+                  className="selection-btn"
+                  type="button"
+                  disabled={csvData.filter(row => row.isValid).length === 0}
+                >
+                  Select All Valid
+                </button>
+                <button 
+                  onClick={deselectAll}
+                  className="selection-btn"
+                  type="button"
+                  disabled={csvData.filter(row => row.selected).length === 0}
+                >
+                  Deselect All
+                </button>
+              </div>
+              <div className="action-buttons">
+                {userId && csvData.length > 0 && csvData.some(row => row.title || row.amount) && (
                   <button 
-                    onClick={selectAllValid}
-                    className="selection-btn"
-                    type="button"
-                    disabled={csvData.filter(row => row.isValid).length === 0}
+                    onClick={saveCurrentSession}
+                    className="save-btn"
+                    title="Save current import session to database"
                   >
-                    Select All Valid
+                    💾 Save Session
                   </button>
-                  <button 
-                    onClick={deselectAll}
-                    className="selection-btn"
-                    type="button"
-                    disabled={csvData.filter(row => row.selected).length === 0}
-                  >
-                    Deselect All
-                  </button>
-                </div>
-                <div className="action-buttons">
-                  {userId && (
-                    <button 
-                      onClick={saveCurrentSession}
-                      className="save-btn"
-                      title="Save current import session to database"
-                    >
-                      💾 Save Session
-                    </button>
-                  )}
+                )}
+                {csvData.length > 0 && csvData.some(row => row.title || row.amount) && (
                   <button 
                     onClick={downloadEditedCSV}
                     className="download-btn"
@@ -523,20 +597,21 @@ const HomePage: React.FC<HomePageProps> = ({ accounts, onImportTransactions, use
                   >
                     📥 Download Edited CSV
                   </button>
-                  <button 
-                    onClick={handleImport}
-                    className="import-btn"
-                    disabled={csvData.filter(row => row.selected && row.isValid).length === 0 || isImporting}
-                  >
-                    {isImporting 
-                      ? `Importing ${csvData.filter(row => row.selected && row.isValid).length} transactions...`
-                      : `Import ${csvData.filter(row => row.selected && row.isValid).length} Selected Transactions`
-                    }
-                  </button>
-                </div>
+                )}
+                <button 
+                  onClick={handleImport}
+                  className="import-btn"
+                  disabled={csvData.filter(row => row.selected && row.isValid).length === 0 || isImporting}
+                >
+                  {isImporting 
+                    ? `Importing ${csvData.filter(row => row.selected && row.isValid).length} transactions...`
+                    : `Import ${csvData.filter(row => row.selected && row.isValid).length} Selected Transactions`
+                  }
+                </button>
               </div>
             </div>
           </div>
+        </div>
 
           <div className="csv-table-container">
             <table className="csv-table">
@@ -595,19 +670,17 @@ const HomePage: React.FC<HomePageProps> = ({ accounts, onImportTransactions, use
                     />
                   );
                 })}
-                {csvData.length > 0 && (
-                  <tr className="add-transaction-row">
-                    <td colSpan={10}>
-                      <button
-                        onClick={() => insertRow(csvData.length)}
-                        className="add-transaction-btn"
-                        type="button"
-                      >
-                        ➕ Add New Transaction
-                      </button>
-                    </td>
-                  </tr>
-                )}
+                <tr className="add-transaction-row">
+                  <td colSpan={10}>
+                    <button
+                      onClick={() => insertRow(csvData.length)}
+                      className="add-transaction-btn"
+                      type="button"
+                    >
+                      ➕ Add New Transaction
+                    </button>
+                  </td>
+                </tr>
               </tbody>
             </table>
           </div>
@@ -620,7 +693,6 @@ const HomePage: React.FC<HomePageProps> = ({ accounts, onImportTransactions, use
             </p>
           </div>
         </div>
-      )}
 
       <div className="csv-format-info">
         <h4>CSV Format Requirements:</h4>

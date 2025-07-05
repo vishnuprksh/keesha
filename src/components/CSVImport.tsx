@@ -1,4 +1,4 @@
-import React, { useState, useRef, useMemo } from 'react';
+import React, { useState, useRef, useMemo, useEffect } from 'react';
 import * as Papa from 'papaparse';
 import { Transaction, Account, CSVRow } from '../types';
 import { validateCSVTransaction } from '../utils/validation';
@@ -28,6 +28,51 @@ const CSVImport: React.FC<CSVImportProps> = ({ accounts, onImportTransactions, u
     if (csvData.length === 0) return [];
     return calculateRunningBalances(csvData, accounts, true);
   }, [csvData, accounts]);
+
+  // Helper function to re-validate existing CSV data
+  const revalidateCSVData = (data: CSVRow[]): CSVRow[] => {
+    return data.map(row => {
+      // Create a validation object with both current data and legacy format
+      const rowForValidation = {
+        ...row,
+        fromAccount: row.fromAccountId,
+        toAccount: row.toAccountId
+      };
+      
+      const validation = validateCSVTransaction(rowForValidation, accounts);
+      
+      return {
+        ...row,
+        fromAccountId: validation.fromAccountId || row.fromAccountId,
+        toAccountId: validation.toAccountId || row.toAccountId,
+        isValid: validation.isValid,
+        errors: validation.errors,
+        // Preserve selection only if the row is still valid
+        selected: row.selected && validation.isValid
+      };
+    });
+  };
+
+  // Re-validate CSV data when accounts change
+  useEffect(() => {
+    if (csvData.length > 0 && accounts.length > 0) {
+      const revalidated = revalidateCSVData(csvData);
+      // Only update if validation results have actually changed
+      const hasChanges = revalidated.some((newRow, index) => {
+        const oldRow = csvData[index];
+        return oldRow && (
+          newRow.isValid !== oldRow.isValid ||
+          newRow.errors.length !== oldRow.errors.length ||
+          newRow.fromAccountId !== oldRow.fromAccountId ||
+          newRow.toAccountId !== oldRow.toAccountId
+        );
+      });
+      
+      if (hasChanges) {
+        setCsvData(revalidated);
+      }
+    }
+  }, [accounts]);
 
   const validateRow = (row: any): CSVRow => {
     const validation = validateCSVTransaction(row, accounts);
@@ -353,10 +398,16 @@ const CSVImport: React.FC<CSVImportProps> = ({ accounts, onImportTransactions, u
     try {
       const session = await getImportSession(sessionId);
       if (session) {
-        setCsvData(session.csvData);
+        // Re-validate all CSV rows against current accounts to ensure they're up-to-date
+        const revalidatedData = revalidateCSVData(session.csvData);
+        
+        setCsvData(revalidatedData);
         setCurrentImportSessionId(sessionId);
         setSelectedFile(new File([], session.fileName, { type: 'text/csv' }));
-        alert(`Loaded import session: ${session.name}`);
+        
+        const validCount = revalidatedData.filter(row => row.isValid).length;
+        const totalCount = revalidatedData.length;
+        alert(`Loaded import session: ${session.name}\n${validCount}/${totalCount} rows are valid after re-validation.`);
       }
     } catch (error) {
       console.error('Error loading session:', error);

@@ -252,8 +252,8 @@ function App() {
       // Force a brief wait to ensure all updates are processed
       await new Promise(resolve => setTimeout(resolve, 300));
       
-      console.log('App: Import process completed, switching to dashboard tab');
-      setActiveTab('dashboard');
+      console.log('App: Import process completed, staying on home tab');
+      // Keep user on home tab instead of switching to dashboard
     } catch (error) {
       console.error('Error importing transactions:', error);
       throw error; // Re-throw to allow UI to handle the error
