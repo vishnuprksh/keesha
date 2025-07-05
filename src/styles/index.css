@@ -35,3 +35,6 @@
 
 /* Page-specific styles */
 @import './pages.css';
+
+/* Enhanced Stats Page */
+@import './stats.css';
