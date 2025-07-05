@@ -178,6 +178,28 @@ const StatsPage: React.FC<StatsPageProps> = ({ transactions, accounts }) => {
 
   const renderOverviewView = () => (
     <div className="stats-overview">
+      {/* Welcome Section */}
+      {transactions.length > 0 && (
+        <div className="welcome-section">
+          <h2>Welcome to your Financial Dashboard</h2>
+          <p>
+            You have <strong>{transactions.length}</strong> transactions across <strong>{accounts.length}</strong> accounts.
+            {currentStats && (
+              <>
+                {" "}Your net position for{" "}
+                {timeFrame === 'month' 
+                  ? `${getMonthName(selectedMonth)} ${selectedYear}` 
+                  : `${selectedYear}`
+                } is{" "}
+                <strong className={currentStats.net >= 0 ? 'positive' : 'negative'}>
+                  {formatAmount(currentStats.net)}
+                </strong>.
+              </>
+            )}
+          </p>
+        </div>
+      )}
+      
       {/* Key Metrics Cards */}
       <div className="metrics-grid">
         <div className="metric-card income">
@@ -491,7 +513,7 @@ const StatsPage: React.FC<StatsPageProps> = ({ transactions, accounts }) => {
       {/* Enhanced Header */}
       <div className="stats-header">
         <div className="header-main">
-          <h1>📊 Financial Analytics</h1>
+          <h1>📊 Dashboard</h1>
           <div className="header-summary">
             {timeFrame === 'month' 
               ? `${getMonthName(selectedMonth)} ${selectedYear}` 

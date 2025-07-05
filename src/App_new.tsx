@@ -16,7 +16,7 @@ import { useAuth } from './useAuth';
 import { migrationService } from './firebaseService';
 
 function App() {
-  const [activeTab, setActiveTab] = useState<'home' | 'transactions' | 'accounts' | 'stats' | 'import'>('home');
+  const [activeTab, setActiveTab] = useState<'import' | 'dashboard' | 'transactions' | 'accounts' | 'stats'>('import');
   const [isMigrating, setIsMigrating] = useState(false);
   
   // Authentication
@@ -249,7 +249,7 @@ function App() {
         }
       }
       
-      setActiveTab('home');
+      setActiveTab('dashboard');
     } catch (error) {
       console.error('Error importing transactions:', error);
     }
@@ -372,10 +372,16 @@ function App() {
         <div className="nav-container">
           <div className="nav-tabs">
             <button
-              className={`nav-tab ${activeTab === 'home' ? 'active' : ''}`}
-              onClick={() => setActiveTab('home')}
+              className={`nav-tab ${activeTab === 'import' ? 'active' : ''}`}
+              onClick={() => setActiveTab('import')}
             >
-              🏠 Home
+              📄 CSV Import
+            </button>
+            <button
+              className={`nav-tab ${activeTab === 'dashboard' ? 'active' : ''}`}
+              onClick={() => setActiveTab('dashboard')}
+            >
+              📊 Dashboard
             </button>
             <button
               className={`nav-tab ${activeTab === 'transactions' ? 'active' : ''}`}
@@ -407,7 +413,7 @@ function App() {
 
       <main className="app-main">
         <div className="container">
-          {activeTab === 'home' && (
+          {activeTab === 'dashboard' && (
             <>
               <TransactionSummary transactions={transactions} accounts={accounts} />
               <div className="content-grid">

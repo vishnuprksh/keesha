@@ -1,9 +1,6 @@
 import React, { useState } from 'react';
 import './App.css';
 import { Transaction, Account } from './types';
-import TransactionForm from './components/TransactionForm';
-import TransactionList from './components/TransactionList';
-import TransactionSummary from './components/TransactionSummary';
 import TransactionsPage from './components/TransactionsPage';
 import AccountManager from './components/AccountManager';
 import CSVImport from './components/CSVImport';
@@ -19,7 +16,7 @@ import { useAuth } from './useAuth';
 import { isAccountUsedInTransactions } from './utils/validation';
 
 function App() {
-  const [activeTab, setActiveTab] = useState<'home' | 'transactions' | 'accounts' | 'stats' | 'import'>('home');
+  const [activeTab, setActiveTab] = useState<'import' | 'dashboard' | 'transactions' | 'accounts'>('import');
   
   // Authentication
   const { user, loading: authLoading, error: authError, signInWithGoogle, signOut, clearError: clearAuthError } = useAuth();
@@ -255,8 +252,8 @@ function App() {
       // Force a brief wait to ensure all updates are processed
       await new Promise(resolve => setTimeout(resolve, 300));
       
-      console.log('App: Import process completed, switching to home tab');
-      setActiveTab('home');
+      console.log('App: Import process completed, switching to dashboard tab');
+      setActiveTab('dashboard');
     } catch (error) {
       console.error('Error importing transactions:', error);
       throw error; // Re-throw to allow UI to handle the error
@@ -372,10 +369,16 @@ function App() {
         <div className="nav-container">
           <div className="nav-tabs">
             <button
-              className={`nav-tab ${activeTab === 'home' ? 'active' : ''}`}
-              onClick={() => setActiveTab('home')}
+              className={`nav-tab ${activeTab === 'import' ? 'active' : ''}`}
+              onClick={() => setActiveTab('import')}
             >
-              🏠 Home
+              📄 CSV Import
+            </button>
+            <button
+              className={`nav-tab ${activeTab === 'dashboard' ? 'active' : ''}`}
+              onClick={() => setActiveTab('dashboard')}
+            >
+              � Dashboard
             </button>
             <button
               className={`nav-tab ${activeTab === 'transactions' ? 'active' : ''}`}
@@ -389,18 +392,6 @@ function App() {
             >
               🏦 Accounts
             </button>
-            <button
-              className={`nav-tab ${activeTab === 'stats' ? 'active' : ''}`}
-              onClick={() => setActiveTab('stats')}
-            >
-              📊 Stats
-            </button>
-            <button
-              className={`nav-tab ${activeTab === 'import' ? 'active' : ''}`}
-              onClick={() => setActiveTab('import')}
-            >
-              📄 CSV Import
-            </button>
           </div>
         </div>
       </nav>
@@ -411,19 +402,11 @@ function App() {
           <CSVImport accounts={accounts} onImportTransactions={importTransactions} userId={user?.uid || null} />
         ) : (
           <div className="container">
-            {activeTab === 'home' && (
-              <>
-                <TransactionSummary transactions={transactions} accounts={accounts} />
-                <div className="content-grid">
-                  <TransactionForm accounts={accounts} onAddTransaction={addTransaction} />
-                  <TransactionList 
-                    transactions={transactions}
-                    accounts={accounts}
-                    onDeleteTransaction={deleteTransaction}
-                    onUpdateTransaction={updateTransaction}
-                  />
-                </div>
-              </>
+            {activeTab === 'dashboard' && (
+              <StatsPage
+                transactions={transactions}
+                accounts={accounts}
+              />
             )}
             
             {activeTab === 'transactions' && (
@@ -442,13 +425,6 @@ function App() {
                 onAddAccount={addAccount}
                 onUpdateAccount={updateAccount}
                 onDeleteAccount={deleteAccount}
-              />
-            )}
-            
-            {activeTab === 'stats' && (
-              <StatsPage
-                transactions={transactions}
-                accounts={accounts}
               />
             )}
           </div>
