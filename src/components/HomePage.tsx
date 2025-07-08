@@ -8,6 +8,7 @@ import { calculateRunningBalances } from '../utils/balanceCalculator';
 import { exportCSVImportDataToCSV } from '../utils/csvExport';
 import DraggableCSVRow from './common/DraggableCSVRow';
 import EmptyState from './common/EmptyState';
+import PDFImport from './PDFImport';
 
 interface HomePageProps {
   accounts: Account[];
@@ -22,6 +23,7 @@ const HomePage: React.FC<HomePageProps> = ({ accounts, onImportTransactions, use
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [currentImportSessionId, setCurrentImportSessionId] = useState<string | null>(null);
   const [showSavedImports, setShowSavedImports] = useState(false);
+  const [showPDFImport, setShowPDFImport] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Calculate running balances for all transactions
@@ -349,6 +351,11 @@ const HomePage: React.FC<HomePageProps> = ({ accounts, onImportTransactions, use
     window.URL.revokeObjectURL(url);
   };
 
+  const handlePDFImport = (pdfData: CSVRow[]) => {
+    // Append PDF data to existing CSV data
+    setCsvData(prev => [...prev, ...pdfData]);
+  };
+
   const saveCurrentSession = async () => {
     if (!userId || csvData.length === 0) return;
 
@@ -630,6 +637,15 @@ const HomePage: React.FC<HomePageProps> = ({ accounts, onImportTransactions, use
             </button>
             
             <button 
+              onClick={() => setShowPDFImport(true)}
+              className="professional-btn pdf-import-btn"
+              disabled={isImporting}
+            >
+              <span className="btn-icon">📄</span>
+              <span className="btn-text">Import from PDF</span>
+            </button>
+            
+            <button 
               onClick={() => {
                 if (window.confirm('Are you sure you want to clear all transaction data? This action cannot be undone.')) {
                   clearImportState();
@@ -720,6 +736,15 @@ const HomePage: React.FC<HomePageProps> = ({ accounts, onImportTransactions, use
         </ul>
         <p><strong>Available accounts:</strong> {accounts.map(acc => `${acc.name} (${acc.type})`).join(', ')}</p>
       </div>
+
+      {/* PDF Import Modal */}
+      {showPDFImport && (
+        <PDFImport
+          accounts={accounts}
+          onImportData={handlePDFImport}
+          onClose={() => setShowPDFImport(false)}
+        />
+      )}
     </div>
   );
 };
