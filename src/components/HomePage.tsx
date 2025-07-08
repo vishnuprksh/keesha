@@ -7,6 +7,7 @@ import { useCSVImportSessions } from '../hooks/useCSVImportSessions';
 import { calculateRunningBalances } from '../utils/balanceCalculator';
 import { exportCSVImportDataToCSV } from '../utils/csvExport';
 import DraggableCSVRow from './common/DraggableCSVRow';
+import EmptyState from './common/EmptyState';
 
 interface HomePageProps {
   accounts: Account[];
@@ -15,7 +16,7 @@ interface HomePageProps {
 }
 
 const HomePage: React.FC<HomePageProps> = ({ accounts, onImportTransactions, userId }) => {
-  const { csvData, setCsvData, selectedFile, setSelectedFile, clearImportState, hasPersistedData, lastSaved, isSaving } = useCSVImportState();
+  const { csvData, setCsvData, selectedFile, setSelectedFile, clearImportState, isSaving } = useCSVImportState();
   const { importSessions, saveImportSession, updateImportSession, deleteImportSession, getImportSession } = useCSVImportSessions(userId);
   const [isImporting, setIsImporting] = useState(false);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
@@ -74,26 +75,7 @@ const HomePage: React.FC<HomePageProps> = ({ accounts, onImportTransactions, use
     }
   }, [accounts]);
 
-  // Always ensure at least one empty row exists when no data or file is present
-  useEffect(() => {
-    // Only initialize empty row if we have no CSV data, no selected file, and no persisted data
-    if (csvData.length === 0 && !selectedFile && !hasPersistedData && accounts.length > 0) {
-      const emptyRow: CSVRow = {
-        id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
-        title: '',
-        amount: '',
-        fromAccountId: '',
-        toAccountId: '',
-        date: new Date().toISOString().split('T')[0], // Today's date
-        description: '',
-        isImportant: 'false',
-        isValid: false,
-        errors: ['Title is required', 'Amount must be a positive number', 'From account is required', 'To account is required'],
-        selected: false
-      };
-      setCsvData([emptyRow]);
-    }
-  }, [accounts, selectedFile, hasPersistedData]);
+  // Remove auto-creation of empty row - users can manually add transactions when needed
 
   const validateRow = (row: any): CSVRow => {
     const validation = validateCSVTransaction(row, accounts);
@@ -456,96 +438,11 @@ const HomePage: React.FC<HomePageProps> = ({ accounts, onImportTransactions, use
     <div className="csv-import">
       <div className="csv-import-header">
         <h2>🏠 Welcome to Keesha</h2>
-        <p>Your personal expense tracker - Add transactions manually below or import from a CSV file. CSV imports will be added to your existing transactions.</p>
-        {hasPersistedData && (
-          <div className="auto-save-notice">
-            <span className="auto-save-icon">💾</span>
-            <span>
-              Auto-saved data restored - your previous CSV import is still here!
-              {lastSaved && (
-                <small style={{ display: 'block', opacity: 0.9, fontSize: '0.9em' }}>
-                  Last saved: {lastSaved.toLocaleString()}
-                </small>
-              )}
-            </span>
-            <button onClick={clearImportState} className="clear-data-btn" title="Clear saved data">
-              Clear Data
-            </button>
-          </div>
-        )}
+        <p>Your personal expense tracker - Add transactions manually or use the import controls at the bottom of the table to upload CSV files.</p>
+
       </div>
 
       <div className="csv-upload-section">
-        <h3>📄 Import Transactions from CSV</h3>
-        <div className="upload-controls">
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".csv"
-            onChange={handleFileSelect}
-            className="file-input"
-            id="csv-file"
-          />
-          <label htmlFor="csv-file" className="file-label">
-            {selectedFile ? selectedFile.name : 'Choose CSV File'}
-          </label>
-          <button onClick={downloadTemplate} className="template-btn">
-            Download Template
-          </button>
-          {userId && (
-            <button 
-              onClick={() => setShowSavedImports(!showSavedImports)} 
-              className="template-btn"
-              title="View saved import sessions"
-            >
-              📂 Saved Imports ({importSessions.length})
-            </button>
-          )}
-        </div>
-
-        {/* Saved Imports Section */}
-        {showSavedImports && userId && (
-          <div className="saved-imports-section">
-            <h4>📂 Saved Import Sessions</h4>
-            {importSessions.length === 0 ? (
-              <p className="no-imports">No saved import sessions found.</p>
-            ) : (
-              <div className="import-sessions-list">
-                {importSessions.map((session) => (
-                  <div key={session.id} className="import-session-item">
-                    <div className="session-info">
-                      <strong>{session.name}</strong>
-                      <span className="session-details">
-                        {session.totalRows} rows, {session.importedRows} imported
-                        <span className={`status-badge ${session.status}`}>
-                          {session.status}
-                        </span>
-                      </span>
-                      <small>{new Date(session.importDate).toLocaleString()}</small>
-                    </div>
-                    <div className="session-actions">
-                      <button 
-                        onClick={() => loadImportSession(session.id)}
-                        className="load-btn"
-                        title="Load this import session"
-                      >
-                        📂 Load
-                      </button>
-                      <button 
-                        onClick={() => deleteSession(session.id)}
-                        className="delete-btn"
-                        title="Delete this import session"
-                      >
-                        🗑️ Delete
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
         {isImporting && <p className="loading">Parsing CSV file...</p>}
       </div>
 
@@ -613,7 +510,21 @@ const HomePage: React.FC<HomePageProps> = ({ accounts, onImportTransactions, use
           </div>
         </div>
 
+        {csvData.length === 0 ? (
           <div className="csv-table-container">
+            <EmptyState
+              icon="📊"
+              title="No transaction data"
+              description="Upload a CSV file or click 'Add New Transaction' to get started with your transaction data."
+              action={{
+                label: "Add New Transaction",
+                onClick: () => insertRow(0)
+              }}
+            />
+          </div>
+        ) : (
+          <>
+            <div className="csv-table-container">
             <table className="csv-table">
               <thead>
                 <tr>
@@ -692,7 +603,110 @@ const HomePage: React.FC<HomePageProps> = ({ accounts, onImportTransactions, use
               {csvData.filter(row => row.selected && row.isValid).length} selected for import
             </p>
           </div>
+          </>
+        )}
+
+        {/* Professional action buttons - always visible */}
+        <div className="table-bottom-actions">
+          <div className="csv-upload-controls">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".csv"
+              onChange={handleFileSelect}
+              className="file-input"
+              id="csv-file-bottom"
+              style={{ display: 'none' }}
+            />
+            <button 
+              onClick={() => fileInputRef.current?.click()}
+              className="professional-btn csv-import-btn"
+              disabled={isImporting}
+            >
+              <span className="btn-icon">📄</span>
+              <span className="btn-text">
+                {isImporting ? 'Importing...' : 'Import CSV File'}
+              </span>
+            </button>
+            
+            <button 
+              onClick={() => {
+                if (window.confirm('Are you sure you want to clear all transaction data? This action cannot be undone.')) {
+                  clearImportState();
+                  setCsvData([]);
+                }
+              }}
+              className="professional-btn clear-data-btn-main"
+              disabled={csvData.length === 0}
+            >
+              <span className="btn-icon">🗑️</span>
+              <span className="btn-text">Clear All Data</span>
+            </button>
+
+            <button 
+              onClick={downloadTemplate} 
+              className="professional-btn template-btn-main"
+            >
+              <span className="btn-icon">📋</span>
+              <span className="btn-text">Download Template</span>
+            </button>
+
+            {userId && (
+              <button 
+                onClick={() => setShowSavedImports(!showSavedImports)} 
+                className="professional-btn saved-imports-btn"
+                title="View saved import sessions"
+              >
+                <span className="btn-icon">�</span>
+                <span className="btn-text">Saved Imports ({importSessions.length})</span>
+              </button>
+            )}
+          </div>
         </div>
+
+        {/* Saved Imports Section - moved below buttons */}
+        {showSavedImports && userId && (
+          <div className="saved-imports-section">
+            <h4>📂 Saved Import Sessions</h4>
+            {importSessions.length === 0 ? (
+              <p className="no-imports">No saved import sessions found.</p>
+            ) : (
+              <div className="import-sessions-list">
+                {importSessions.map((session) => (
+                  <div key={session.id} className="import-session-item">
+                    <div className="session-info">
+                      <strong>{session.name}</strong>
+                      <span className="session-details">
+                        {session.totalRows} rows, {session.importedRows} imported
+                        <span className={`status-badge ${session.status}`}>
+                          {session.status}
+                        </span>
+                      </span>
+                      <small>{new Date(session.importDate).toLocaleString()}</small>
+                    </div>
+                    <div className="session-actions">
+                      <button 
+                        onClick={() => loadImportSession(session.id)}
+                        className="load-btn"
+                        title="Load this import session"
+                      >
+                        📂 Load
+                      </button>
+                      <button 
+                        onClick={() => deleteSession(session.id)}
+                        className="delete-btn"
+                        title="Delete this import session"
+                      >
+                        🗑️ Delete
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
 
       <div className="csv-format-info">
         <h4>CSV Format Requirements:</h4>
