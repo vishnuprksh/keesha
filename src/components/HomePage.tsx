@@ -743,6 +743,7 @@ const HomePage: React.FC<HomePageProps> = ({ accounts, onImportTransactions, use
           accounts={accounts}
           onImportData={handlePDFImport}
           onClose={() => setShowPDFImport(false)}
+          userId={userId || ''}
         />
       )}
     </div>

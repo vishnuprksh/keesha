@@ -1,5 +1,5 @@
 import { GoogleGenAI } from '@google/genai';
-import { Account } from '../types';
+import { accountService } from '../firebaseService';
 
 export interface GeminiTransactionData {
   title: string;
@@ -26,7 +26,13 @@ export class GeminiService {
     });
   }
 
-  async processPDFText(pdfText: string, accounts: Account[]): Promise<GeminiTransactionData[]> {
+  async processPDFText(pdfText: string, userId: string): Promise<GeminiTransactionData[]> {
+    if (!userId) {
+      throw new Error('User ID is required to fetch accounts');
+    }
+    
+    // Fetch accounts from database
+    const accounts = await accountService.getAllAccounts(userId);
     const accountsList = accounts.map(acc => `${acc.name} (${acc.type})`).join(', ');
     
     const config = {

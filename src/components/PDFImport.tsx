@@ -7,9 +7,10 @@ interface PDFImportProps {
   accounts: Account[];
   onImportData: (data: CSVRow[]) => void;
   onClose: () => void;
+  userId: string;
 }
 
-const PDFImport: React.FC<PDFImportProps> = ({ accounts, onImportData, onClose }) => {
+const PDFImport: React.FC<PDFImportProps> = ({ accounts, onImportData, onClose, userId }) => {
   const [pdfText, setPdfText] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -24,11 +25,16 @@ const PDFImport: React.FC<PDFImportProps> = ({ accounts, onImportData, onClose }
       return;
     }
 
+    if (!userId) {
+      setError('User not authenticated. Please sign in first.');
+      return;
+    }
+
     setIsProcessing(true);
     setError(null);
 
     try {
-      const geminiData = await geminiService.processPDFText(pdfText, accounts);
+      const geminiData = await geminiService.processPDFText(pdfText, userId);
       
       // Convert Gemini data to CSVRow format
       const csvData: CSVRow[] = geminiData.map((data: GeminiTransactionData) => {
