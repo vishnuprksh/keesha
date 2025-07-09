@@ -815,6 +815,42 @@
   transform: none;
 }
 
+/* Loading Bar Animation */
+.loading-bar {
+  width: 100px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-right: 0.5rem;
+}
+
+.loading-bar-progress {
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.8), transparent);
+  animation: loading-slide 1.5s infinite;
+  width: 40%;
+}
+
+@keyframes loading-slide {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(250%);
+  }
+}
+
+/* Update process button to handle loading state */
+.process-btn {
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.process-btn:disabled .loading-bar {
+  display: block;
+}
+
 .error-message {
   background: #ffebee;
   color: #c62828;
@@ -853,4 +889,59 @@
   cursor: not-allowed;
   transform: none;
   box-shadow: none;
+}
+
+/* Processing Indicator */
+.processing-indicator {
+  background: linear-gradient(135deg, #e3f2fd, #f8f9fa);
+  border: 2px solid #2196f3;
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 1rem;
+  text-align: center;
+  animation: pulse-glow 2s infinite;
+}
+
+.processing-indicator p {
+  margin: 0.5rem 0 0 0;
+  color: #1976d2;
+  font-weight: 500;
+  font-size: 0.95rem;
+}
+
+.processing-bar {
+  width: 100%;
+  height: 8px;
+  background: rgba(33, 150, 243, 0.1);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 0.5rem;
+}
+
+.processing-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #2196f3, #42a5f5, #2196f3);
+  animation: processing-flow 2s infinite;
+  width: 100%;
+}
+
+@keyframes processing-flow {
+  0% {
+    transform: translateX(-100%);
+  }
+  50% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 5px rgba(33, 150, 243, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(33, 150, 243, 0.5);
+  }
 }

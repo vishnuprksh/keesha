@@ -12,7 +12,7 @@ export interface GeminiTransactionData {
 
 export class GeminiService {
   private ai: GoogleGenAI;
-  private model = 'gemini-2.5-pro';
+  private model = 'gemini-2.5-flash';
 
   constructor() {
     const apiKey = process.env.REACT_APP_GEMINI_API_KEY;

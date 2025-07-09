@@ -115,7 +115,16 @@ const PDFImport: React.FC<PDFImportProps> = ({ accounts, onImportData, onClose }
               className="process-btn"
               disabled={!pdfText.trim() || isProcessing}
             >
-              {isProcessing ? 'Processing...' : 'Process with AI'}
+              {isProcessing ? (
+                <>
+                  <div className="loading-bar">
+                    <div className="loading-bar-progress"></div>
+                  </div>
+                  Processing... (may take a few minutes)
+                </>
+              ) : (
+                'Process with AI'
+              )}
             </button>
           </div>
         </form>
