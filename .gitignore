@@ -2,12 +2,21 @@
 node_modules/
 /.pnp
 .pnp.js
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
 # Testing
 /coverage
+test-*.js
+test-*.py
+test-*.sh
+*.test.js
+*.spec.js
 
 # Production
 /build
+/dist
 
 # Environment variables
 .env
@@ -15,24 +24,17 @@ node_modules/
 .env.development.local
 .env.test.local
 .env.production.local
+.env.example
 
-# Misc
-.DS_Store
-
-# Logs
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# IDE
-.vscode/
-.idea/
-
-# Optional npm cache directory
-.npm
-
-# Optional eslint cache
-.eslintcache
+# API Keys and Secrets
+*.key
+*.pem
+*-key.json
+*-service-account-key.json
+service-account-*.json
+secrets.json
+config/secrets.*
+firebase-adminsdk-*.json
 
 # Firebase
 firebase-debug.log*
@@ -42,17 +44,44 @@ functions-debug.log*
 .firebaserc.local
 firebase-export-*/
 .runtimeconfig.json
+firebase-cache/
 
-# Environment variables
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+# IDE and Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
 
-# Firebase service account keys (if any)
-*-service-account-key.json
-service-account-*.json
+# Cache and temporary files
+.npm
+.yarn-integrity
+.eslintcache
+.parcel-cache/
+.cache/
+*.tmp
+*.temp
 
-# Firebase cache
-.firebase-cache/
+# Documentation and development files
+docs/
+*.md
+!README.md
+deployment-*.md
+setup-*.md
+
+# Backup and sample files
+*.backup
+*.bak
+sample-*.csv
+example-*.json
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
