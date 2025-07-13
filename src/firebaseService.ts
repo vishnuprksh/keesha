@@ -10,15 +10,17 @@ import {
   onSnapshot,
   Timestamp,
   writeBatch,
-  where
+  where,
+  setDoc
 } from 'firebase/firestore';
 import { db, isFirebaseConfigured } from './firebase';
-import { Transaction, Account, CSVImportSession } from './types';
+import { Transaction, Account, CSVImportSession, UserProfile, UserPreferences } from './types';
 
 // Collections
 const TRANSACTIONS_COLLECTION = 'transactions';
 const ACCOUNTS_COLLECTION = 'accounts';
 const CSV_IMPORTS_COLLECTION = 'csvImports';
+const USER_PROFILES_COLLECTION = 'userProfiles';
 
 // Helper function to check Firebase configuration
 const ensureFirebaseConfigured = () => {
@@ -390,6 +392,155 @@ export const csvImportService = {
     );
 
     return unsubscribe;
+  }
+};
+
+// User Profile Services
+export const userProfileService = {
+  // Create or update user profile
+  async createUserProfile(userId: string, email: string, displayName: string): Promise<void> {
+    const database = ensureFirebaseConfigured();
+    try {
+      console.log(`🔧 UserProfile: Creating profile for user ${userId}`);
+      console.log(`📧 UserProfile: Email: ${email}`);
+      console.log(`👤 UserProfile: Display name: ${displayName}`);
+      
+      const defaultPreferences: UserPreferences = {
+        currency: 'USD',
+        theme: 'auto',
+        notifications: {
+          email: true,
+          push: false
+        }
+      };
+
+      const userProfile: UserProfile = {
+        id: userId,
+        email,
+        displayName,
+        isOnboardingComplete: false,
+        preferences: defaultPreferences,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+
+      console.log(`💾 UserProfile: Saving profile to Firestore...`);
+      await setDoc(doc(database, USER_PROFILES_COLLECTION, userId), {
+        ...userProfile,
+        createdAt: Timestamp.now(),
+        updatedAt: Timestamp.now()
+      });
+      console.log(`✅ UserProfile: Profile created successfully for user ${userId}`);
+    } catch (error) {
+      console.error(`🚨 UserProfile: Error creating profile for user ${userId}:`, error);
+      if (error instanceof Error) {
+        console.error('🚨 UserProfile: Error message:', error.message);
+        console.error('🚨 UserProfile: Error stack:', error.stack);
+      }
+      throw error;
+    }
+  },
+
+  // Get user profile
+  async getUserProfile(userId: string): Promise<UserProfile | null> {
+    const database = ensureFirebaseConfigured();
+    try {
+      console.log(`🔍 UserProfile: Getting profile for user ${userId}`);
+      const docRef = doc(database, USER_PROFILES_COLLECTION, userId);
+      const docSnap = await getDoc(docRef);
+      
+      console.log(`📄 UserProfile: Document exists: ${docSnap.exists()}`);
+      
+      if (!docSnap.exists()) {
+        console.log(`❌ UserProfile: No profile found for user ${userId}`);
+        return null;
+      }
+
+      const profile = {
+        id: docSnap.id,
+        ...docSnap.data()
+      } as UserProfile;
+      
+      console.log(`✅ UserProfile: Profile retrieved successfully:`, profile);
+      return profile;
+    } catch (error) {
+      console.error(`🚨 UserProfile: Error getting profile for user ${userId}:`, error);
+      if (error instanceof Error) {
+        console.error('🚨 UserProfile: Error message:', error.message);
+        if ('code' in error) {
+          console.error('🚨 UserProfile: Error code:', (error as any).code);
+        }
+      }
+      throw error;
+    }
+  },
+
+  // Update user profile
+  async updateUserProfile(userId: string, updates: Partial<UserProfile>): Promise<void> {
+    const database = ensureFirebaseConfigured();
+    try {
+      const docRef = doc(database, USER_PROFILES_COLLECTION, userId);
+      await updateDoc(docRef, {
+        ...updates,
+        updatedAt: Timestamp.now()
+      });
+    } catch (error) {
+      console.error('Error updating user profile:', error);
+      throw error;
+    }
+  },
+
+  // Mark onboarding as complete
+  async completeOnboarding(userId: string): Promise<void> {
+    const database = ensureFirebaseConfigured();
+    try {
+      const docRef = doc(database, USER_PROFILES_COLLECTION, userId);
+      await updateDoc(docRef, {
+        isOnboardingComplete: true,
+        updatedAt: Timestamp.now()
+      });
+    } catch (error) {
+      console.error('Error completing onboarding:', error);
+      throw error;
+    }
+  },
+
+  // Subscribe to user profile changes
+  subscribeToUserProfile(userId: string, callback: (profile: UserProfile | null) => void): () => void {
+    const database = ensureFirebaseConfigured();
+    const docRef = doc(database, USER_PROFILES_COLLECTION, userId);
+    
+    console.log(`🔍 UserProfile: Setting up subscription for user ${userId}`);
+    
+    return onSnapshot(docRef, (docSnap) => {
+      console.log(`📄 UserProfile: Document snapshot received for user ${userId}`);
+      console.log(`📄 UserProfile: Document exists: ${docSnap.exists()}`);
+      
+      if (docSnap.exists()) {
+        const profile = {
+          id: docSnap.id,
+          ...docSnap.data()
+        } as UserProfile;
+        console.log(`✅ UserProfile: Profile loaded successfully:`, profile);
+        callback(profile);
+      } else {
+        console.log(`❌ UserProfile: No profile found for user ${userId}`);
+        callback(null);
+      }
+    }, (error) => {
+      console.error(`🚨 UserProfile: Error listening to user profile for ${userId}:`, error);
+      console.error('🚨 UserProfile: Error code:', error.code);
+      console.error('🚨 UserProfile: Error message:', error.message);
+      
+      // Handle specific permission errors
+      if (error.code === 'permission-denied') {
+        console.error('🚨 UserProfile: Permission denied - check Firebase security rules');
+        console.error('🚨 UserProfile: Make sure the updated firestore.rules are deployed');
+      }
+      
+      // Call callback with null to indicate error state
+      callback(null);
+    });
   }
 };
 

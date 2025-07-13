@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import './App.css';
+import './styles/onboarding.css';
 import { Transaction, Account } from './types';
 import TransactionsPage from './components/TransactionsPage';
 import AccountManager from './components/AccountManager';
@@ -9,10 +10,12 @@ import FirebaseSetup from './components/FirebaseSetup';
 import LoginPage from './components/LoginPage';
 import UserHeader from './components/UserHeader';
 import SyncStatusIndicator from './components/SyncStatusIndicator';
+import OnboardingWizard from './components/OnboardingWizard';
 import LoadingSpinner from './components/common/LoadingSpinner';
 import ErrorMessage from './components/common/ErrorMessage';
 import { useFirebaseData } from './useFirebaseData';
 import { useAuth } from './useAuth';
+import { useUserProfile } from './hooks/useUserProfile';
 import { isAccountUsedInTransactions } from './utils/validation';
 
 function App() {
@@ -20,6 +23,16 @@ function App() {
   
   // Authentication
   const { user, loading: authLoading, error: authError, signInWithGoogle, signOut, clearError: clearAuthError } = useAuth();
+  
+  // User Profile Management
+  const { 
+    userProfile, 
+    loading: profileLoading, 
+    error: profileError,
+    createUserProfile,
+    completeOnboarding,
+    clearError: clearProfileError
+  } = useUserProfile(user?.uid);
   
   // Use Firebase data with user ID
   const {
@@ -35,6 +48,7 @@ function App() {
     addAccount: firebaseAddAccount,
     updateAccount: firebaseUpdateAccount,
     deleteAccount: firebaseDeleteAccount,
+    importAccounts: firebaseImportAccounts,
     clearError: clearDataError
   } = useFirebaseData(user?.uid);
 
@@ -260,6 +274,80 @@ function App() {
     }
   };
 
+  // Handle onboarding completion
+  const handleOnboardingComplete = async (selectedAccounts: Omit<Account, 'id'>[]) => {
+    try {
+      console.log('🚀 App: Starting onboarding completion');
+      if (!user) {
+        console.log('🚨 App: No user found during onboarding completion');
+        return;
+      }
+      
+      console.log(`👤 App: User info - ID: ${user.uid}, Email: ${user.email}, Name: ${user.displayName}`);
+      
+      // Create user profile if it doesn't exist
+      if (!userProfile) {
+        console.log('🔧 App: Creating user profile (profile does not exist)');
+        await createUserProfile(
+          user.email || '',
+          user.displayName || 'User'
+        );
+        console.log('✅ App: User profile creation initiated');
+      } else {
+        console.log('ℹ️ App: User profile already exists, skipping creation');
+      }
+      
+      // Import selected accounts
+      if (selectedAccounts.length > 0) {
+        console.log(`📊 App: Importing ${selectedAccounts.length} selected accounts`);
+        await firebaseImportAccounts(selectedAccounts);
+        console.log('✅ App: Accounts imported successfully');
+      } else {
+        console.log('ℹ️ App: No accounts selected for import');
+      }
+      
+      // Mark onboarding as complete
+      console.log('🏁 App: Marking onboarding as complete');
+      await completeOnboarding();
+      console.log('✅ App: Onboarding completion process finished');
+      
+    } catch (error) {
+      console.error('🚨 App: Error completing onboarding:', error);
+    }
+  };
+
+  const handleOnboardingSkip = async () => {
+    try {
+      console.log('⏭️ App: Starting onboarding skip');
+      if (!user) {
+        console.log('🚨 App: No user found during onboarding skip');
+        return;
+      }
+      
+      console.log(`👤 App: User info - ID: ${user.uid}, Email: ${user.email}, Name: ${user.displayName}`);
+      
+      // Create user profile if it doesn't exist
+      if (!userProfile) {
+        console.log('🔧 App: Creating user profile (onboarding skipped)');
+        await createUserProfile(
+          user.email || '',
+          user.displayName || 'User'
+        );
+        console.log('✅ App: User profile creation initiated');
+      } else {
+        console.log('ℹ️ App: User profile already exists, skipping creation');
+      }
+      
+      // Mark onboarding as complete
+      console.log('🏁 App: Marking onboarding as complete (skipped)');
+      await completeOnboarding();
+      console.log('✅ App: Onboarding skip process finished');
+      
+    } catch (error) {
+      console.error('🚨 App: Error skipping onboarding:', error);
+    }
+  };
+
   // Show Firebase setup if not configured
   if (firebaseNotConfigured) {
     return (
@@ -290,7 +378,7 @@ function App() {
   }
 
   // Show loading state
-  const loading = authLoading || dataLoading;
+  const loading = authLoading || dataLoading || profileLoading;
   if (loading) {
     return (
       <div className="app">
@@ -305,7 +393,7 @@ function App() {
             <div style={{ textAlign: 'center', padding: '2rem' }}>
               <LoadingSpinner 
                 size="lg" 
-                text={authLoading ? 'Signing you in...' : 'Loading your data...'}
+                text={authLoading ? 'Signing you in...' : profileLoading ? 'Setting up your profile...' : 'Loading your data...'}
               />
               <p style={{ marginTop: '1rem' }}>
                 Please wait while we set up your account.
@@ -317,8 +405,47 @@ function App() {
     );
   }
 
+  // Show onboarding if user profile doesn't exist or onboarding is not complete
+  // Also handle cases where we can't access user profile due to permissions
+  const shouldShowOnboarding = user && (
+    !userProfile || 
+    !userProfile.isOnboardingComplete ||
+    (profileError && profileError.includes('permission'))
+  );
+  
+  // TEMPORARY: If there's a permission error, we can still allow access to main app
+  // This allows existing users to continue working while Firebase rules are deployed
+  const hasPermissionError = profileError && profileError.includes('permission');
+  
+  // Show permission error notification if needed
+  const showPermissionNotification = hasPermissionError && user;
+
+  if (shouldShowOnboarding && !profileLoading && !hasPermissionError) {
+    console.log('🎯 App: Showing onboarding wizard');
+    console.log('🎯 App: Reasons:', {
+      noUserProfile: !userProfile,
+      onboardingIncomplete: userProfile && !userProfile.isOnboardingComplete,
+      permissionError: profileError && profileError.includes('permission')
+    });
+    
+    return (
+      <>
+        <OnboardingWizard
+          onComplete={handleOnboardingComplete}
+          onSkip={handleOnboardingSkip}
+        />
+      </>
+    );
+  }
+  
+  // TEMPORARY: If there's a permission error but user has existing data, show main app
+  if (hasPermissionError && accounts.length > 0) {
+    console.log('⚠️ App: Permission error detected but user has existing data - showing main app');
+    console.log('⚠️ App: Deploy Firebase rules to enable user profiles and onboarding');
+  }
+
   // Show error state
-  const error = authError || dataError;
+  const error = authError || dataError || profileError;
   if (error) {
     return (
       <div className="app">
@@ -335,6 +462,7 @@ function App() {
               onRetry={() => {
                 clearAuthError();
                 clearDataError();
+                clearProfileError();
               }}
             />
           </div>
@@ -345,6 +473,31 @@ function App() {
 
   return (
     <div className="app">
+      {/* Permission notification banner */}
+      {showPermissionNotification && (
+        <div style={{
+          background: '#fff3cd',
+          border: '1px solid #ffeaa7',
+          color: '#856404',
+          padding: '12px 20px',
+          textAlign: 'center',
+          fontSize: '14px',
+          fontWeight: '500'
+        }}>
+          ⚠️ User profiles disabled due to Firebase rules. Deploy updated rules to enable onboarding and enhanced features.
+          <span style={{ marginLeft: '10px' }}>
+            <a 
+              href="https://console.firebase.google.com" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              style={{ color: '#856404', textDecoration: 'underline' }}
+            >
+              Firebase Console
+            </a>
+          </span>
+        </div>
+      )}
+      
       <header className="app-header">
         <div style={{ 
           display: 'flex', 

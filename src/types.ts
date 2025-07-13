@@ -1,11 +1,33 @@
 export type AccountType = 'bank' | 'income' | 'expense' | 'asset' | 'liability' | 'transaction';
 
+// User Profile types
+export interface UserProfile {
+  id: string; // Same as userId
+  email: string;
+  displayName: string;
+  isOnboardingComplete: boolean;
+  preferences: UserPreferences;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface UserPreferences {
+  currency: string;
+  defaultAccount?: string;
+  theme: 'light' | 'dark' | 'auto';
+  notifications: {
+    email: boolean;
+    push: boolean;
+  };
+}
+
 export interface Account {
   id: string;
   name: string;
   type: AccountType;
   balance: number;
   description?: string;
+  userId?: string; // Added for explicit user reference
 }
 
 export interface Transaction {
@@ -17,6 +39,7 @@ export interface Transaction {
   date: string;
   description?: string;
   isImportant?: boolean;
+  userId?: string; // Added for explicit user reference
 }
 
 // CSV Import related types

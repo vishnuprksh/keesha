@@ -2,6 +2,14 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
+    // User profiles collection
+    match /userProfiles/{userId} {
+      allow read, write, update, delete: if request.auth != null && 
+                        userId == request.auth.uid;
+      allow create: if request.auth != null && 
+                   userId == request.auth.uid;
+    }
+    
     // Transactions collection
     match /transactions/{document} {
       allow read, write, update, delete: if request.auth != null && 
@@ -18,7 +26,7 @@ service cloud.firestore {
                    request.resource.data.userId == request.auth.uid;
     }
     
-    // CSV import sessions collection - FIXED FOR PERMISSIONS
+    // CSV import sessions collection
     match /csvImports/{document} {
       allow read, write, update, delete: if request.auth != null && 
                         resource.data.userId == request.auth.uid;
