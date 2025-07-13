@@ -100,24 +100,165 @@ export const validateCSVTransaction = (row: any, accounts: Account[]): CSVValida
     isValid = false;
   }
 
+  // Helper function to find account with intelligent semantic matching
+  const findAccountWithIntelligentMatch = (identifier: string, isFromAccount: boolean = true): Account | undefined => {
+    if (!identifier) return undefined;
+    
+    // Exact match first
+    let account = accounts.find(acc => acc.name === identifier || acc.id === identifier);
+    if (account) return account;
+    
+    // Try partial match (case insensitive)
+    const lowerIdentifier = identifier.toLowerCase();
+    account = accounts.find(acc => 
+      acc.name.toLowerCase() === lowerIdentifier ||
+      acc.name.toLowerCase().includes(lowerIdentifier) ||
+      lowerIdentifier.includes(acc.name.toLowerCase())
+    );
+    if (account) return account;
+    
+    // Try matching without parentheses and type info
+    const cleanIdentifier = identifier.replace(/\s*\([^)]*\)\s*$/g, '').trim();
+    if (cleanIdentifier !== identifier) {
+      account = accounts.find(acc => 
+        acc.name === cleanIdentifier ||
+        acc.name.toLowerCase() === cleanIdentifier.toLowerCase()
+      );
+      if (account) return account;
+    }
+    
+    // Intelligent semantic matching based on keywords
+    const getSemanticMatches = (query: string): Account[] => {
+      const queryLower = query.toLowerCase();
+      const matches: Account[] = [];
+      
+      // Food/Grocery matching
+      if (queryLower.includes('food') || queryLower.includes('grocery') || queryLower.includes('dining') || 
+          queryLower.includes('restaurant') || queryLower.includes('meal')) {
+        matches.push(...accounts.filter(acc => 
+          acc.type === 'expense' && 
+          (acc.name.toLowerCase().includes('food') || acc.name.toLowerCase().includes('grocery') ||
+           acc.name.toLowerCase().includes('dining') || acc.name.toLowerCase().includes('restaurant'))
+        ));
+      }
+      
+      // Entertainment matching
+      if (queryLower.includes('entertainment') || queryLower.includes('movie') || queryLower.includes('game')) {
+        matches.push(...accounts.filter(acc => 
+          acc.type === 'expense' && 
+          (acc.name.toLowerCase().includes('entertainment') || acc.name.toLowerCase().includes('fun') ||
+           acc.name.toLowerCase().includes('leisure'))
+        ));
+      }
+      
+      // Travel matching
+      if (queryLower.includes('travel') || queryLower.includes('transport') || queryLower.includes('fuel') || 
+          queryLower.includes('taxi') || queryLower.includes('uber')) {
+        matches.push(...accounts.filter(acc => 
+          acc.type === 'expense' && 
+          (acc.name.toLowerCase().includes('travel') || acc.name.toLowerCase().includes('transport') ||
+           acc.name.toLowerCase().includes('fuel') || acc.name.toLowerCase().includes('gas'))
+        ));
+      }
+      
+      // Utilities matching
+      if (queryLower.includes('utility') || queryLower.includes('electric') || queryLower.includes('water') || 
+          queryLower.includes('internet') || queryLower.includes('wifi') || queryLower.includes('phone')) {
+        matches.push(...accounts.filter(acc => 
+          acc.type === 'expense' && 
+          (acc.name.toLowerCase().includes('utility') || acc.name.toLowerCase().includes('electric') ||
+           acc.name.toLowerCase().includes('water') || acc.name.toLowerCase().includes('internet') ||
+           acc.name.toLowerCase().includes('wifi') || acc.name.toLowerCase().includes('phone'))
+        ));
+      }
+      
+      // Bank matching
+      if (queryLower.includes('bank') || queryLower.includes('sib') || queryLower.includes('sbi') || 
+          queryLower.includes('savings') || queryLower.includes('current')) {
+        matches.push(...accounts.filter(acc => 
+          (acc.type === 'bank' || acc.type === 'asset') && 
+          (acc.name.toLowerCase().includes('bank') || acc.name.toLowerCase().includes('sib') ||
+           acc.name.toLowerCase().includes('sbi') || acc.name.toLowerCase().includes('savings') ||
+           acc.name.toLowerCase().includes('current'))
+        ));
+      }
+      
+      // Income matching
+      if (queryLower.includes('salary') || queryLower.includes('income') || queryLower.includes('wage')) {
+        matches.push(...accounts.filter(acc => 
+          acc.type === 'income' && 
+          (acc.name.toLowerCase().includes('salary') || acc.name.toLowerCase().includes('income') ||
+           acc.name.toLowerCase().includes('wage') || acc.name.toLowerCase().includes('pay'))
+        ));
+      }
+      
+      return matches;
+    };
+    
+    const semanticMatches = getSemanticMatches(identifier);
+    if (semanticMatches.length > 0) {
+      return semanticMatches[0]; // Return first match
+    }
+    
+    // Fallback to account type matching
+    if (isFromAccount) {
+      // For fromAccount, prefer bank/asset accounts
+      account = accounts.find(acc => acc.type === 'bank' || acc.type === 'asset');
+      if (account) return account;
+    } else {
+      // For toAccount, prefer expense accounts
+      account = accounts.find(acc => acc.type === 'expense');
+      if (account) return account;
+    }
+    
+    return undefined;
+  };
+
   // Validate fromAccount - check both original CSV field and updated field
   const fromAccountIdentifier = row.fromAccountId || row.fromAccount;
-  const fromAccount = accounts.find(acc => acc.name === fromAccountIdentifier || acc.id === fromAccountIdentifier);
-  if (!fromAccountIdentifier || !fromAccount) {
-    errors.push(`From account "${fromAccountIdentifier || 'undefined'}" not found`);
+  const fromAccount = findAccountWithIntelligentMatch(fromAccountIdentifier, true);
+  let fromAccountId = fromAccount?.id;
+  
+  if (!fromAccountIdentifier) {
+    errors.push('From account is required');
     isValid = false;
+  } else if (!fromAccount) {
+    errors.push(`From account "${fromAccountIdentifier}" not found`);
+    // Only use fallback for truly missing accounts
+    const unknownAccount = accounts.find(acc => acc.name === 'Unknown' && acc.type === 'transaction') ||
+                          accounts.find(acc => acc.type === 'transaction') ||
+                          accounts.find(acc => acc.type === 'bank') ||
+                          accounts.find(acc => acc.type === 'asset') ||
+                          accounts[0];
+    fromAccountId = unknownAccount?.id;
+    if (!fromAccountId) {
+      isValid = false;
+    }
   }
 
   // Validate toAccount - check both original CSV field and updated field
   const toAccountIdentifier = row.toAccountId || row.toAccount;
-  const toAccount = accounts.find(acc => acc.name === toAccountIdentifier || acc.id === toAccountIdentifier);
-  if (!toAccountIdentifier || !toAccount) {
-    errors.push(`To account "${toAccountIdentifier || 'undefined'}" not found`);
+  const toAccount = findAccountWithIntelligentMatch(toAccountIdentifier, false);
+  let toAccountId = toAccount?.id;
+  
+  if (!toAccountIdentifier) {
+    errors.push('To account is required');
     isValid = false;
+  } else if (!toAccount) {
+    errors.push(`To account "${toAccountIdentifier}" not found`);
+    // Only use fallback for truly missing accounts
+    const unknownAccount = accounts.find(acc => acc.name === 'Unknown' && acc.type === 'transaction') ||
+                          accounts.find(acc => acc.type === 'transaction') ||
+                          accounts.find(acc => acc.type === 'expense') ||
+                          accounts[0];
+    toAccountId = unknownAccount?.id;
+    if (!toAccountId) {
+      isValid = false;
+    }
   }
 
   // Validate that from and to accounts are different
-  if (fromAccount && toAccount && fromAccount.id === toAccount.id) {
+  if (fromAccountId && toAccountId && fromAccountId === toAccountId) {
     errors.push('From and To accounts must be different');
     isValid = false;
   }
@@ -132,7 +273,7 @@ export const validateCSVTransaction = (row: any, accounts: Account[]): CSVValida
   return {
     isValid,
     errors,
-    fromAccountId: fromAccount?.id,
-    toAccountId: toAccount?.id
+    fromAccountId: fromAccountId,
+    toAccountId: toAccountId
   };
 };

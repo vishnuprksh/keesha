@@ -14,6 +14,7 @@ const PDFImport: React.FC<PDFImportProps> = ({ accounts, onImportData, onClose, 
   const [pdfText, setPdfText] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [useThinkingMode, setUseThinkingMode] = useState(false);
 
   const geminiService = new GeminiService();
 
@@ -34,7 +35,7 @@ const PDFImport: React.FC<PDFImportProps> = ({ accounts, onImportData, onClose, 
     setError(null);
 
     try {
-      const geminiData = await geminiService.processPDFText(pdfText, userId);
+      const geminiData = await geminiService.processPDFText(pdfText, userId, useThinkingMode);
       
       // Convert Gemini data to CSVRow format
       const csvData: CSVRow[] = geminiData.map((data: GeminiTransactionData) => {
@@ -58,7 +59,8 @@ const PDFImport: React.FC<PDFImportProps> = ({ accounts, onImportData, onClose, 
       onImportData(csvData);
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to process PDF text');
+      const errorMessage = err instanceof Error ? err.message : 'Failed to process PDF text';
+      setError(errorMessage);
     } finally {
       setIsProcessing(false);
     }
@@ -90,10 +92,42 @@ const PDFImport: React.FC<PDFImportProps> = ({ accounts, onImportData, onClose, 
             </div>
             
             {error && (
-              <div className="error-message">
-                ❌ {error}
+              <div className={`error-message ${error.includes('too large') ? 'token-limit-warning' : ''}`}>
+                {error.includes('too large') ? (
+                  <>
+                    <div className="warning-icon">⚠️</div>
+                    <div className="warning-content">
+                      <strong>PDF Text Too Large</strong>
+                      <p>{error}</p>
+                      <p className="warning-suggestion">
+                        <strong>Suggestions:</strong>
+                        <br />• Copy only a portion of the PDF text (e.g., one month of transactions)
+                        <br />• Split large PDFs into smaller sections
+                        <br />• Remove unnecessary text like headers, footers, or account summaries
+                      </p>
+                    </div>
+                  </>
+                ) : (
+                  <>❌ {error}</>
+                )}
               </div>
             )}
+            
+            <div className="thinking-mode-toggle">
+              <label className="toggle-container">
+                <input
+                  type="checkbox"
+                  checked={useThinkingMode}
+                  onChange={(e) => setUseThinkingMode(e.target.checked)}
+                  disabled={isProcessing}
+                />
+                <span className="toggle-checkmark"></span>
+                <span className="toggle-label">Think Harder 🧠</span>
+                <span className="toggle-description">
+                  Uses AI reasoning for better accuracy (slower processing)
+                </span>
+              </label>
+            </div>
             
             <div className="available-accounts">
               <h4>Available Accounts:</h4>
