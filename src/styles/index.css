@@ -27,6 +27,9 @@
 /* CSV Table component */
 @import './csv-table.css';
 
+/* Transaction Filters component */
+@import './transaction-filters.css';
+
 /* Transaction components */
 @import './transactions.css';
 

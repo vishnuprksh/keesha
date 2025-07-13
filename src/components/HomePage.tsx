@@ -6,9 +6,11 @@ import { useCSVImportState } from '../hooks/useCSVImportState';
 import { useCSVImportSessions } from '../hooks/useCSVImportSessions';
 import { calculateRunningBalances } from '../utils/balanceCalculator';
 import { exportCSVImportDataToCSV } from '../utils/csvExport';
+import { filterAndSortCSVData } from '../utils/csvFilters';
 import DraggableCSVRow from './common/DraggableCSVRow';
 import EmptyState from './common/EmptyState';
 import PDFImport from './PDFImport';
+import TransactionFilters, { FilterOptions } from './common/TransactionFilters';
 
 interface HomePageProps {
   accounts: Account[];
@@ -24,13 +26,29 @@ const HomePage: React.FC<HomePageProps> = ({ accounts, onImportTransactions, use
   const [currentImportSessionId, setCurrentImportSessionId] = useState<string | null>(null);
   const [showSavedImports, setShowSavedImports] = useState(false);
   const [showPDFImport, setShowPDFImport] = useState(false);
+  const [filters, setFilters] = useState<FilterOptions>({
+    search: '',
+    accountId: '',
+    dateFrom: '',
+    dateTo: '',
+    amountMin: '',
+    amountMax: '',
+    status: 'all',
+    sortBy: 'date',
+    sortDirection: 'desc'
+  });
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Calculate running balances for all transactions
+  // Apply filters and sorting to CSV data
+  const filteredAndSortedData = useMemo(() => {
+    return filterAndSortCSVData(csvData, filters, accounts);
+  }, [csvData, filters, accounts]);
+
+  // Calculate running balances for filtered transactions
   const runningBalancesData = useMemo(() => {
-    if (csvData.length === 0) return [];
-    return calculateRunningBalances(csvData, accounts, true);
-  }, [csvData, accounts]);
+    if (filteredAndSortedData.length === 0) return [];
+    return calculateRunningBalances(filteredAndSortedData, accounts, true);
+  }, [filteredAndSortedData, accounts]);
 
   // Helper function to re-validate existing CSV data
   const revalidateCSVData = (data: CSVRow[]): CSVRow[] => {
@@ -531,6 +549,14 @@ const HomePage: React.FC<HomePageProps> = ({ accounts, onImportTransactions, use
           </div>
         ) : (
           <>
+            <TransactionFilters
+              filters={filters}
+              onFiltersChange={setFilters}
+              accounts={accounts}
+              totalRows={csvData.length}
+              filteredRows={filteredAndSortedData.length}
+            />
+            
             <div className="csv-table-container">
             <table className="csv-table">
               <thead>
@@ -539,7 +565,7 @@ const HomePage: React.FC<HomePageProps> = ({ accounts, onImportTransactions, use
                   <th className="select-header">
                     <input
                       type="checkbox"
-                      checked={csvData.length > 0 && csvData.filter(row => row.isValid).every(row => row.selected)}
+                      checked={filteredAndSortedData.length > 0 && filteredAndSortedData.filter(row => row.isValid).every(row => row.selected)}
                       onChange={(e) => {
                         if (e.target.checked) {
                           selectAllValid();
@@ -547,7 +573,7 @@ const HomePage: React.FC<HomePageProps> = ({ accounts, onImportTransactions, use
                           deselectAll();
                         }
                       }}
-                      disabled={csvData.filter(row => row.isValid).length === 0}
+                      disabled={filteredAndSortedData.filter(row => row.isValid).length === 0}
                       title="Select/Deselect all valid transactions"
                     />
                   </th>
@@ -563,17 +589,20 @@ const HomePage: React.FC<HomePageProps> = ({ accounts, onImportTransactions, use
                 </tr>
               </thead>
               <tbody>
-                {csvData.map((row, index) => {
+                {filteredAndSortedData.map((row, index) => {
                   const balanceData = runningBalancesData.find(
                     (item, idx) => idx === index
                   );
                   const runningBalances = balanceData?.runningBalances || {};
+                  
+                  // Find the original index in csvData for update operations
+                  const originalIndex = csvData.findIndex(originalRow => originalRow.id === row.id);
 
                   return (
                     <DraggableCSVRow
                       key={row.id}
                       row={row}
-                      index={index}
+                      index={originalIndex}
                       accounts={accounts}
                       runningBalances={runningBalances}
                       onUpdateRow={updateRow}
